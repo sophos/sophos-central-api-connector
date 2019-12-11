@@ -1,6 +1,6 @@
 # sophos-central-api-connector
 [![Generic badge](https://img.shields.io/badge/Python-v3.7-blue.svg)](https://shields.io/)
-[![Generic badge](https://img.shields.io/badge/version-0.1.0-green.svg)](https://shields.io/)
+[![Generic badge](https://img.shields.io/badge/version-1.0.0-green.svg)](https://shields.io/)
 
 Python library to gather alerts and endpoint data from your Sophos Central tenants
 
