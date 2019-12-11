@@ -1,7 +1,8 @@
 # sophos-central-api-connector
-Python library to gather alerts and endpoint data from your Sophos Central tenants
-
+[![Generic badge](https://img.shields.io/badge/Python-v3.7-blue.svg)](https://shields.io/)
 [![Generic badge](https://img.shields.io/badge/version-0.1.0-green.svg)](https://shields.io/)
+
+Python library to gather alerts and endpoint data from your Sophos Central tenants
 
 Sophos Central API Documentation: https://developer.sophos.com/
 
@@ -13,6 +14,48 @@ In order to use the package you will require a valid API key from your Sophos Ce
 
 ### Install
 Add in some information here once this has been added to PyPI.
+
+### Basic Examples
+
+#### Help
+To get information on the CLI commands when using the `sophos_central_main.py` simply run:
+
+```
+python3 <path to file>/sophos_central_main.py --help
+```
+
+#### Tenants List
+To get a list of tenants:
+
+```
+python3 <path to file>/sophos_central_main.py --auth <auth_option> --get tenants
+```
+#### Endpoint Information
+
+Gathering the inventory information can be done for all of your tenants or one specific tenant. There are various methods on how this data can be presented. The output methods are stdout, json or sending the data to Splunk. More detailed example are covered under the Advanced Usage section.
+
+There are various products which can utilise data from stdout such as running a script in Splunk and indexing the data dynamically. Also this can be used as a response in automation to provide further details on a systems health etc.
+
+The syntax to use when requesting to get inventory is the following:
+```
+python3 <path to file>/sophos_central_main.py --auth <auth_option> --get inventory --output <output_option>
+```
+
+#### Alert/Event Information
+
+To gather alerts for your tenants you can pass the alerts option when running the --get parameter. Some additional options are available
+when gathering alerts above calling the inventory of machines:
+
+- --days
+- --poll_alerts (covered in the Advanced Usage section)
+- --reset (covered in the Advanced Usage section)
+
+As with calling the inventory option, you can pull alerts for a specific tenant or all of the tenants. In addition you can specify the number of days of events you would like to pull back by using the days parameter.
+
+Sophos Central holds event data for 90 days, so when calling the days parameter you can specifiy days as an integer from 1-90. If no days parameter is passed a default of 1 day is set. below is an example of passing the days parameter:
+```
+python3 <path to file>/sophos_central_main.py --auth <auth_option> --get alerts --days <integer: 1-90> --output <output_option>
+```
 
 ## Advanced Usage
 
