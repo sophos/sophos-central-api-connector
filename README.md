@@ -56,7 +56,7 @@ The page size configuration is the number of events you would like to appear per
 This config is solely for users who are sending the events and inventory directly to Splunk. There are options for both static token information or there is also an option to use the AWS Secrets Manager. 
 
 > #### **Important!**
-> We would recommend that the statiic entry is only used for testing purposes and the token is stored and accessed securely.
+> We would recommend that the static entry is only used for testing purposes and the token is stored and accessed securely.
 
 ##### splunk_aws
 To enable the use of the token from the AWS Secrets Manager set : `1`
