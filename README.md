@@ -164,7 +164,7 @@ When running the poll_alerts for a second time a new file will be generated call
 
 This file maintains a list of events which have already been successfully sent to Splunk and will be removed from the alerts obtained from the Sophos Central API.
 
-## Resetting Polling
+### Resetting Polling
 If you need to reset the polling and start re-pulling in events you can pass the reset parameter to initiate this. Along with the reset parameter you can also pass the days parameter in order to specify how many days should be pulled using the API. Syntax on how to pass this is as follows:
 
 ```
