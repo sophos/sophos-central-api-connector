@@ -21,14 +21,14 @@ Add in some information here once this has been added to PyPI.
 To get information on the CLI commands when using the `sophos_central_main.py` simply run:
 
 ```
-python3 <path to file>/sophos_central_main.py --help
+python3 sophos_central_main.py --help
 ```
 
 ### Tenants List
 To get a list of tenants:
 
 ```
-python3 <path to file>/sophos_central_main.py --auth <auth_option> --get tenants
+python3 sophos_central_main.py --auth <auth_option> --get tenants
 ```
 ### Endpoint Information
 
@@ -38,7 +38,7 @@ There are various products which can utilise data from stdout such as running a 
 
 The syntax to use when requesting to get inventory is the following:
 ```
-python3 <path to file>/sophos_central_main.py --auth <auth_option> --get inventory --output <output_option>
+python3 sophos_central_main.py --auth <auth_option> --get inventory --output <output_option>
 ```
 
 ### Alert/Event Information
@@ -54,7 +54,7 @@ As with calling the inventory option, you can pull alerts for a specific tenant 
 
 Sophos Central holds event data for 90 days, so when calling the days parameter you can specifiy days as an integer from 1-90. If no days parameter is passed a default of 1 day is set. below is an example of passing the days parameter:
 ```
-python3 <path to file>/sophos_central_main.py --auth <auth_option> --get alerts --days <integer: 1-90> --output <output_option>
+python3 sophos_central_main.py --auth <auth_option> --get alerts --days <integer: 1-90> --output <output_option>
 ```
 ## Configuration
 The following configuration files can be changed to reflect your environment and also your needs.
@@ -72,6 +72,7 @@ This variable is set to `1` in the event that no days parameter is passed in cer
 > #### **Important!**
 > Whilst you are able to set static API credentials in this configuration we strongly advise that this is only done for testing purposes.
 > Where possible use AWS Secrets Manager to store your credential id and token
+> Please reference the authnetication section under advanced usage to use the correct parameter
 
 You can access your AWS secrets by configuring your details as below:
 - **secret_name:** \<secret_name\>
@@ -86,6 +87,7 @@ This config is solely for users who are sending the events and inventory directl
 
 > #### **Important!**
 > We would recommend that the static entry is only used for testing purposes and the token is stored and accessed securely.
+> Please reference the authnetication section under advanced usage to use the correct parameter
 
 #### splunk_aws
 To enable the use of the token from the AWS Secrets Manager set : `1`
@@ -115,6 +117,17 @@ This section of the config allows you to override the details for source, host a
 
 ## Advanced Usage
 
+### Authentication
+There are two options for authentication, the setting used here will be used for all areas of authentication, i.e both Sophos Central API and Splunk HEC token. As mentioned under the configuration section we recommend using the AWS Secrets Manager for storing these credentials. Only use the static credentials for testing purposes.
+
+#### Static Credentials
+To specify using the static credentials which are in the \*config.ini files you can use the following:
+`python3 sophos_central_main.py --auth static`
+
+#### AWS Secrets Manager
+To specify using the AWS settings which are in the \*config.ini files to retrieve the secrets and token you can use the following:
+`python3 sophos_central_main.py --auth aws`
+
 ### Logging
 All logging is done via the naitive python `logging` library. Valid logging levels are:
 
@@ -138,7 +151,7 @@ The polling option is available for alert events. This is so you can gather aler
 
 The correct syntax to poll for alert events is as follows:
 ```
-python3 <path to file>/sophos_central_main.py --auth <auth_option> --get alerts --days <integer: 1-90> --poll_alerts --output <splunk or splunk_trans>
+python3 sophos_central_main.py --auth <auth_option> --get alerts --days <integer: 1-90> --poll_alerts --output <splunk or splunk_trans>
 ```
 On the initial run of this syntax the following files will be created:
 - poll_config.json
@@ -155,7 +168,7 @@ This file maintains a list of events which have already been successfully sent t
 If you need to reset the polling and start re-pulling in events you can pass the reset parameter to initiate this. Along with the reset parameter you can also pass the days parameter in order to specify how many days should be pulled using the API. Syntax on how to pass this is as follows:
 
 ```
-python3 <path to file>/sophos_central_main.py --auth <auth_option> --get alerts --days <integer: 1-90> --reset --poll_alerts --output <splunk or splunk_trans>
+python3 sophos_central_main.py --auth <auth_option> --get alerts --days <integer: 1-90> --reset --poll_alerts --output <splunk or splunk_trans>
 ```
 
 Running this syntax will delete the files:
