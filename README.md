@@ -177,9 +177,6 @@ Running this syntax will delete the files:
 - alert_ids.json
 - temp_alert_ids.json
 
-## Workflow
-Put some information in here how the different functions hang together. This will give users an idea what to do if they import individual functions to their own project
-
 ## ToDo
 - [ ] Add ability to check Splunk HTTP Event Collector Acknowledgements
 - [ ] Improve logging
