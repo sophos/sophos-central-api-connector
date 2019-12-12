@@ -71,7 +71,7 @@ This variable is set to `1` in the event that no days parameter is passed in cer
 ### sophos_config.ini
 > #### **Important!**
 > Whilst you are able to set static API credentials in this configuration we strongly advise that this is only done for testing purposes.
-> Where possible use AWS Secrets Manager to store your credential id and token
+> Where possible use AWS Secrets Manager to store your credential id and token.
 > Please reference the authnetication section under advanced usage to use the correct parameter
 
 You can access your AWS secrets by configuring your details as below:
