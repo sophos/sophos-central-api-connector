@@ -14,7 +14,9 @@ The below instructions will take you through obtaining a copy of the project and
 In order to use the package you will require a valid API key from your Sophos Central tenant. To obtain a valid API key please reference the documentation here: https://developer.sophos.com/intro
 
 ### Install
-Add in some information here once this has been added to PyPI.
+```
+pip3 install --user sophos_central_api_connector
+```
 
 ## Basic Examples
 
@@ -72,7 +74,7 @@ This variable is set to `1` in the event that no days parameter is passed in cer
 ### sophos_config.ini
 > #### **Important!**
 > Whilst you are able to set static API credentials in this configuration we strongly advise that this is only done for testing purposes.
-> Where possible use AWS Secrets Manager to store your credential id and token.
+> Where possible use AWS Secrets Manager to store your credential id and token
 > Please reference the authnetication section under advanced usage to use the correct parameter
 
 You can access your AWS secrets by configuring your details as below:
@@ -177,7 +179,74 @@ Running this syntax will delete the files:
 - alert_ids.json
 - temp_alert_ids.json
 
+## Structure
+Below is the structure after installing through pip:
+```
+sophos_central_api_connector
+|   .gitignore
+|   LICENSE
+|   README.md
+|   requirements.txt
+|   setup.py
+|___sophos_central_api_connector
+|       __init__.py
+|       sophos_central_api_auth.py
+|       sophos_central_api_awssecrets.py
+|       sophos_central_api_connector_utils.py
+|       sophos_central_api_get_data.py
+|       sophos_central_api_output.py
+|       sophos_central_api_polling.py
+|       sophos_central_api_tenants.py
+|       sophos_central_api_hec_splunk.py
+|       sophos_central_main.py
+|___config
+        __init__.py
+        sophos_central_api_config.py
+        sophos_config.ini
+        splunk_config.ini
+```
+
+Below is the structure with all the files that are created through different mechanisms:
+```
+sophos_central_api_connector
+|   .gitignore
+|   LICENSE
+|   README.md
+|   requirements.txt
+|   setup.py
+|___sophos_central_api_connector
+|       __init__.py
+|       sophos_central_api_auth.py
+|       sophos_central_api_awssecrets.py
+|       sophos_central_api_connector_utils.py
+|       sophos_central_api_get_data.py
+|       sophos_central_api_output.py
+|       sophos_central_api_polling.py
+|       sophos_central_api_tenants.py
+|       sophos_central_api_hec_splunk.py
+|       sophos_central_main.py
+|___config
+|       __init__.py
+|       sophos_central_api_config.py
+|       sophos_config.ini
+|       splunk_config.ini
+|___logs
+|       failed_events.json
+|___output
+|   |___get_alerts
+|   |       <tenant_name>_<tenant_id>.json
+|   |       ...
+|   |___get_inventory
+|           <tenant_name>_<tenant_id>.json
+|           ...
+|___polling
+        poll_config.json
+        alert_ids.json
+        temp_alert_ids.json
+```
+
 ## ToDo
 - [ ] Add ability to check Splunk HTTP Event Collector Acknowledgements
-- [ ] Improve logging
+- [ ] Improve logging, perhaps write to file
 - [ ] Improve polling failures
+- [ ] Improve retrying failed alert events
