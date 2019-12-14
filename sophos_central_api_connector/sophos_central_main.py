@@ -2,7 +2,7 @@ import logging
 import argparse as ap
 import configparser as cp
 from re import match
-from sys import exit
+from sys import exit, platform
 from os import path
 
 from sophos_central_api_connector import sophos_central_api_auth as api_auth, sophos_central_api_output as api_output, \
@@ -163,7 +163,7 @@ def print_tenant_info(tenant_info):
     exit(0)
 
 
-def get_splunk_creds():
+def get_splunk_creds(splunk_final_path):
     # Initially set the Splunk flag and Splunk creds to None.
     splunk_aws_flag = None
     splunk_creds = None
@@ -171,7 +171,7 @@ def get_splunk_creds():
     # load and read the splunk config
     logging.info("Reading Splunk configuration information")
     splunk_conf = cp.ConfigParser(allow_no_value=True)
-    splunk_conf.read('sophos_central_api_connector/config/splunk_config.ini')
+    splunk_conf.read(splunk_final_path)
     splunk_use_aws = splunk_conf.get('splunk_aws', 'splunk_aws')
     splunk_ack_enabled = splunk_conf.get('splunk_hec', 'splunk_ack_enabled')
     splunk_verify_ack = splunk_conf.get('splunk_hec', 'verify_ack_result')
@@ -226,10 +226,10 @@ def get_splunk_creds():
             return splunk_creds
 
 
-def get_sophos_creds(sophos_auth):
+def get_sophos_creds(sophos_auth, sophos_final_path):
     # load and read the sophos config file
     sophos_conf = cp.ConfigParser(allow_no_value=True)
-    sophos_conf.read('sophos_central_api_connector/config/sophos_config.ini')
+    sophos_conf.read(sophos_final_path)
 
     if sophos_auth == "static":
         # Auth is static so the creds are pulled from the config
@@ -267,6 +267,12 @@ def get_sophos_creds(sophos_auth):
             "further information")
 
 
+def get_file_location(process_path):
+    dir_name = path.dirname(__file__)
+    final_path = "{0}{1}".format(dir_name,process_path)
+    return final_path
+
+
 def main(args):
     # Assign parameters to variables
     log_level = args.log_level
@@ -277,6 +283,10 @@ def main(args):
     reset_flag = args.reset
     get = args.get
     tenant = args.tenant
+    splunk_conf_path = api_conf.splunk_conf_path
+    splunk_final_path = get_file_location(splunk_conf_path)
+    sophos_conf_path = api_conf.sophos_conf_path
+    sophos_final_path = get_file_location(sophos_conf_path)
 
     # Set authorisation and whoami URLs
     auth_url = api_conf.auth_uri
@@ -286,7 +296,7 @@ def main(args):
 
     # Get sophos config
     sophos_conf = cp.ConfigParser(allow_no_value=True)
-    sophos_conf.read('sophos_central_api_connector/config/sophos_config.ini')
+    sophos_conf.read(sophos_final_path)
 
     # Set the level of the handler based on the value passed by the parameter
     if log_level is None:
@@ -301,12 +311,12 @@ def main(args):
     logging.info("Start of logging")
 
     # Get Sophos Central API Creds and check for Splunk Creds if required
-    client_id, client_secret = get_sophos_creds(sophos_auth)
+    client_id, client_secret = get_sophos_creds(sophos_auth, sophos_final_path)
 
     # Get Splunk credentials if required
     splunk_creds = None
     if output == "splunk" or output == "splunk_trans":
-        splunk_creds = get_splunk_creds()
+        splunk_creds = get_splunk_creds(splunk_final_path)
 
     # Get Sophos Central API Bearer Token for authorisation
     sophos_access_token = api_auth.get_bearer_tok(client_id, client_secret, auth_url)

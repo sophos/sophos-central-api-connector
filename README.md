@@ -189,7 +189,6 @@ sophos_central_api_connector
 |   requirements.txt
 |   setup.py
 |___sophos_central_api_connector
-|       __init__.py
 |       sophos_central_api_auth.py
 |       sophos_central_api_awssecrets.py
 |       sophos_central_api_connector_utils.py
@@ -200,7 +199,6 @@ sophos_central_api_connector
 |       sophos_central_api_hec_splunk.py
 |       sophos_central_main.py
 |___config
-        __init__.py
         sophos_central_api_config.py
         sophos_config.ini
         splunk_config.ini
@@ -215,7 +213,6 @@ sophos_central_api_connector
 |   requirements.txt
 |   setup.py
 |___sophos_central_api_connector
-|       __init__.py
 |       sophos_central_api_auth.py
 |       sophos_central_api_awssecrets.py
 |       sophos_central_api_connector_utils.py
@@ -226,7 +223,6 @@ sophos_central_api_connector
 |       sophos_central_api_hec_splunk.py
 |       sophos_central_main.py
 |___config
-|       __init__.py
 |       sophos_central_api_config.py
 |       sophos_config.ini
 |       splunk_config.ini

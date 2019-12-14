@@ -1,8 +1,9 @@
 import json
 import logging
 from datetime import datetime
-from os import path, remove
+from os import path, remove, makedirs
 from sophos_central_api_connector import sophos_central_api_connector_utils as api_utils
+from sophos_central_api_connector.config import sophos_central_api_config as api_conf
 
 
 def polling_alerts(alerts_exists, temp_exists, reset_flag, day_flag, days):
@@ -22,15 +23,17 @@ def polling_alerts(alerts_exists, temp_exists, reset_flag, day_flag, days):
         logging.debug("from: {0}, to: {1}".format(from_str, to_str))
         # recreate the polling config
         alerts_exists = create_poll_config(to_str)
+        poll_tf_path = api_conf.poll_temp_path
+        poll_temp_path = get_file_location(poll_tf_path)
         if alerts_exists and reset_flag:
             # If the polling config is set and the reset flag is passed. Prepare for the next run
             logging.info("Deleting alert_ids log")
             # delete the old alert_ids.json. This will remove the last events successfully sent
-            remove('sophos_central_api_connector/polling/alert_ids.json')
+            remove(poll_alerts_path)
         if temp_exists and reset_flag:
             # If the temp file exists then it will be deleted if the reset flag is set
             logging.info("Deleting temp_alert_ids log")
-            remove('sophos_central_api_connector/polling/temp_alert_ids.json')
+            remove(poll_temp_path)
         logging.info("Setting reset_flag to 'False'")
         # set the reset_flag to false to avoid it being reset again on the next pass
         reset_flag = False
@@ -57,21 +60,29 @@ def polling_alerts(alerts_exists, temp_exists, reset_flag, day_flag, days):
 
 def create_poll_config(to_str):
     # create the polling config
+    poll_path = api_conf.poll_conf_path
+    final_poll_conf_path = get_file_location(poll_path)
+    poll_dir = api_conf.poll_path
+    poll_dir = get_file_location(poll_dir)
+    if not path.exists(poll_dir):
+        makedirs(poll_dir)
     poll_dict = {'last_run_datetime': '{0}'.format(to_str),
                  'firsttime_run': 'True', 'last_run_success_bool': '', 'last_run_success_datetime': '',
                  'first_loop': 'True', 'failures_seen': 'False'}
-    with open('sophos_central_api_connector/polling/poll_config.json', 'w+', encoding='utf-8') as pa_file:
+    with open(final_poll_conf_path, 'w', encoding='utf-8') as pa_file:
         json.dump(poll_dict, pa_file, ensure_ascii=False, indent=2)
 
     # re-check whether the polling config is set in order to return correctly
-    alerts_exists = path.isfile('sophos_central_api_connector/polling/poll_config.json')
+    alerts_exists = path.isfile(final_poll_conf_path)
     return alerts_exists
 
 
 def polling_from(days):
     # If the polling config is already available checks are made to determine the last state of the run to correctly
+    poll_path = api_conf.poll_conf_path
+    final_poll_conf_path = get_file_location(poll_path)
     # determine the from and to datetimes
-    with open('sophos_central_api_connector/polling/poll_config.json') as pa_file:
+    with open(final_poll_conf_path) as pa_file:
         poll_dict = json.loads(pa_file.read())
         if poll_dict['last_run_success_bool'] == 'False':
             # If the last run was not successful it uses the last successful datetime for the from datetime
@@ -92,12 +103,16 @@ def polling_from(days):
 
 
 def prepare_poll(events, temp_exists, from_str):
+    poll_al_ids_path = api_conf.poll_alerts_path
+    poll_alerts_path = get_file_location(poll_al_ids_path)
     # re-check whether the alert_ids json file exists
-    alertids_exists = path.isfile('sophos_central_api_connector/polling/alert_ids.json')
+    alertids_exists = path.isfile(poll_alerts_path)
     logging.info("Does the alert_ids.json file exist? {0}".format(alertids_exists))
 
     # Open the poll config to configure polling
-    with open('sophos_central_api_connector/polling/poll_config.json', 'r') as pa_file:
+    poll_path = api_conf.poll_conf_path
+    final_poll_conf_path = get_file_location(poll_path)
+    with open(final_poll_conf_path, 'r') as pa_file:
         poll_dict = json.load(pa_file)
 
     if not alertids_exists:
@@ -108,7 +123,7 @@ def prepare_poll(events, temp_exists, from_str):
             # set the first loop to false to determine behaviour on next loop
             poll_dict.update({"first_loop": "False"})
 
-            with open('sophos_central_api_connector/polling/poll_config.json', 'w+') as pa_file:
+            with open(final_poll_conf_path, 'w+') as pa_file:
                 json.dump(poll_dict, pa_file, ensure_ascii=False, indent=2)
 
             return events
@@ -134,10 +149,12 @@ def prepare_poll(events, temp_exists, from_str):
 
 
 def alert_file_checks(poll_dict, events, temp_exists, from_str):
+    poll_path = api_conf.poll_conf_path
+    final_poll_conf_path = get_file_location(poll_path)
     # only run checks if the alert_ids file exists
     if poll_dict['firsttime_run'] == "True" and poll_dict['first_loop'] == "True":
         poll_dict.update({"first_loop": "False"})
-        with open('sophos_central_api_connector/polling/poll_config.json', 'w+') as pa_file:
+        with open(final_poll_conf_path, 'w+') as pa_file:
             json.dump(poll_dict, pa_file, ensure_ascii=False, indent=2)
         # if this is the firstime run and first loop, then just return the events
         return events
@@ -156,16 +173,20 @@ def alert_file_checks(poll_dict, events, temp_exists, from_str):
         processed_existing_events = remove_old_alert_ids(from_datetime, process_alerts)
 
         # Write the necessary events to file
-        with open('sophos_central_api_connector/polling/temp_alert_ids.json', 'w+', encoding='utf-8') as new_id_file:
+        poll_tf_path = api_conf.poll_temp_path
+        poll_temp_path = get_file_location(poll_tf_path)
+        with open(poll_temp_path, 'w+', encoding='utf-8') as new_id_file:
             json.dump(processed_existing_events, new_id_file, ensure_ascii=False, indent=2)
 
         # Reset first loop to ensure events are maintained on next pass
         poll_dict.update({"first_loop": "False"})
-        with open('sophos_central_api_connector/polling/poll_config.json', 'w+') as pa_file:
+        with open(final_poll_conf_path, 'w+') as pa_file:
             json.dump(poll_dict, pa_file, ensure_ascii=False, indent=2)
 
         logging.info("deleting alert_ids.json")
-        remove('sophos_central_api_connector/polling/alert_ids.json')
+        poll_al_ids_path = api_conf.poll_alerts_path
+        poll_alerts_path = get_file_location(poll_al_ids_path)
+        remove(poll_alerts_path)
 
         # Go through events gathered from Sophos Central and remove entries already sent
         spl_events = process_poll_events(events)
@@ -184,12 +205,16 @@ def first_loop_prep(temp_exists, from_str):
     if temp_exists:
         # if the file exists clear it down for this new run
         logging.info("temp alerts file exists, clear it down")
-        with open('sophos_central_api_connector/polling/temp_alert_ids.json', 'w', encoding='utf-8') as reset_temp:
+        poll_tf_path = api_conf.poll_temp_path
+        poll_temp_path = get_file_location(poll_tf_path)
+        with open(poll_temp_path, 'w', encoding='utf-8') as reset_temp:
             temp_dict = {}
             json.dump(temp_dict, reset_temp)
 
     # Open the alert ids and load into json for checking
-    with open('sophos_central_api_connector/polling/alert_ids.json', 'r', encoding='utf-8') as existing_alerts:
+    poll_al_ids_path = api_conf.poll_alerts_path
+    poll_alerts_path = get_file_location(poll_al_ids_path)
+    with open(poll_alerts_path, 'r', encoding='utf-8') as existing_alerts:
         # Load the file as json
         process_alerts = json.load(existing_alerts)
         logging.debug(process_alerts)
@@ -220,8 +245,10 @@ def remove_old_alert_ids(from_datetime, process_alerts):
 
 def process_poll_events(events):
     # Search and remove any ids which have already been sent and build new json
+    poll_tf_path = api_conf.poll_temp_path
+    poll_temp_path = get_file_location(poll_tf_path)
     logging.info("Begin processing events...")
-    with open('sophos_central_api_connector/polling/temp_alert_ids.json', 'r') as check_alerts:
+    with open(poll_temp_path, 'r') as check_alerts:
         temp_alert_ids = json.load(check_alerts, encoding='utf-8')
         new_spl_events = {}
 
@@ -251,34 +278,42 @@ def process_poll_events(events):
 
 def gen_idalerts(event_data):
     # When an event has been successfully sent to splunk the event data is written to file
-    alertids_exists = path.isfile('sophos_central_api_connector/polling/alert_ids.json')
+    poll_al_ids_path = api_conf.poll_alerts_path
+    poll_alerts_path = get_file_location(poll_al_ids_path)
+    alertids_exists = path.isfile(poll_alerts_path)
     if alertids_exists:
         # if the alert_ids.json file already exists load the existing information to a variable
-        with open('sophos_central_api_connector/polling/alert_ids.json', 'r') as alerts_file:
+        with open(poll_alerts_path, 'r') as alerts_file:
             alert_ids = json.load(alerts_file)
 
         # update the dictionary with the new event information that was successfully sent to
         alert_ids.update(event_data)
-        with open('sophos_central_api_connector/polling/alert_ids.json', 'w', encoding='utf-8') as id_file:
+        with open(poll_alerts_path, 'w', encoding='utf-8') as id_file:
             json.dump(alert_ids, id_file, ensure_ascii=False, indent=2)
 
     else:
         # if the file doesnt yet exist then create it with the event data
-        with open('sophos_central_api_connector/polling/alert_ids.json', 'w', encoding='utf-8') as alerts_file:
+        with open(poll_alerts_path, 'w', encoding='utf-8') as alerts_file:
             json.dump(event_data, alerts_file, ensure_ascii=False, indent=2)
 
 
 def finalise_polling(poll, to_str):
+    poll_path = api_conf.poll_conf_path
+    final_poll_conf_path = get_file_location(poll_path)
+    poll_al_ids_path = api_conf.poll_alerts_path
+    poll_alerts_path = get_file_location(poll_al_ids_path)
+    poll_tf_path = api_conf.poll_temp_path
+    poll_temp_path = get_file_location(poll_tf_path)
     # once there are no further events to process for all of the tenants need to finalise the polling information
     # ready for the next run
-    exists = path.isfile('sophos_central_api_connector/polling/poll_config.json')
-    temp_exists = path.isfile('sophos_central_api_connector/polling/temp_alert_ids.json')
-    main_exists = path.isfile('sophos_central_api_connector/polling/alert_ids.json')
+    exists = path.isfile(final_poll_conf_path)
+    temp_exists = path.isfile(poll_temp_path)
+    main_exists = path.isfile(poll_alerts_path)
 
     def get_old_alerts():
         # gather the old sent alerts from the temp file if any
         if temp_exists:
-            with open('sophos_central_api_connector/polling/temp_alert_ids.json', 'r') as check_alerts:
+            with open(poll_temp_path, 'r') as check_alerts:
                 temp_alert_ids = json.load(check_alerts, encoding='utf-8')
             return temp_alert_ids
         else:
@@ -288,7 +323,7 @@ def finalise_polling(poll, to_str):
     def get_new_alerts():
         # gather the new events that have been sent if any
         if main_exists:
-            with open('sophos_central_api_connector/polling/alert_ids.json', 'r') as new_alerts:
+            with open(poll_alerts_path, 'r') as new_alerts:
                 alerts = json.load(new_alerts, encoding='utf-8')
             return alerts
         else:
@@ -307,7 +342,7 @@ def finalise_polling(poll, to_str):
 
         if new_alerts is None:
             # if there are no new alerts then just dump the old alerts to alert_ids.json
-            with open('sophos_central_api_connector/polling/alert_ids.json', 'w', encoding='utf-8') as maintain_alerts:
+            with open(poll_alerts_path, 'w', encoding='utf-8') as maintain_alerts:
                 json.dump(old_alerts, maintain_alerts, ensure_ascii=False, indent=2)
         else:
             # if there are new alerts then go through old alerts and add them to the new events in alert_ids.json
@@ -315,7 +350,7 @@ def finalise_polling(poll, to_str):
                     old_ev = {old_id: old_id_value}
                     new_alerts.update(old_ev)
 
-            with open('sophos_central_api_connector/polling/alert_ids.json', 'w', encoding='utf-8') as combined_alerts:
+            with open(poll_alerts_path, 'w', encoding='utf-8') as combined_alerts:
                 json.dump(new_alerts, combined_alerts, ensure_ascii=False, indent=2)
     else:
         # if the temp file doesnt exist then skip this part
@@ -324,7 +359,7 @@ def finalise_polling(poll, to_str):
     if exists and poll:
         # if the polling config exists and the polling is set then update the config according to the result of the pass
         logging.info("Update poll_config information")
-        with open('sophos_central_api_connector/polling/poll_config.json', 'r') as pa_file:
+        with open(final_poll_conf_path, 'r') as pa_file:
             poll_dict = json.load(pa_file)
 
             logging.debug(poll_dict)
@@ -346,7 +381,12 @@ def finalise_polling(poll, to_str):
                 poll_dict['firsttime_run'] = 'False'
 
         # write the changes to the polling config
-        with open('sophos_central_api_connector/polling/poll_config.json', 'w') as pa_file:
+        with open(final_poll_conf_path, 'w') as pa_file:
             json.dump(poll_dict, pa_file, indent=2)
     else:
         pass
+
+def get_file_location(process_path):
+    dir_name = path.dirname(__file__)
+    final_path = "{0}{1}".format(dir_name,process_path)
+    return final_path

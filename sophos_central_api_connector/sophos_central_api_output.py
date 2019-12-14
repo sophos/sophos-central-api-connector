@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import configparser as cp
+from sophos_central_api_connector.config import sophos_central_api_config as api_conf
 
 
 def process_output(output, json_items, tenant_url_data, tenant_id, api, sourcetype_value):
@@ -33,18 +34,20 @@ def process_output_json(json_items, filename, api):
     if api == "endpoint":
         logging.debug("JSON file output, appending inventory data")
         # a new folder is created to store the files
-        path = "sophos_central_api_connector/output/get_inventory"
-        if not os.path.exists(path):
-            os.makedirs(path)
-        with open(os.path.join(path, filename), "w", encoding='utf-8') as ep_file:
+        inv_path = api_conf.output_inv_path
+        final_inv_path = get_file_location(inv_path)
+        if not os.path.exists(final_inv_path):
+            os.makedirs(final_inv_path)
+        with open(os.path.join(final_inv_path, filename), "w", encoding='utf-8') as ep_file:
             json.dump(json_items, ep_file, ensure_ascii=False, indent=2)
     elif api == "common":
+        al_path = api_conf.output_al_path
+        final_al_path = get_file_location(al_path)
         logging.debug("JSON file output, appending alerts data")
         # a new folder is created to store the files
-        path = "sophos_central_api_connector/output/get_alerts"
-        if not os.path.exists(path):
-            os.makedirs(path)
-        with open(os.path.join(path, filename), "w", encoding='utf-8') as ep_file:
+        if not os.path.exists(final_al_path):
+            os.makedirs(final_al_path)
+        with open(os.path.join(final_al_path, filename), "w", encoding='utf-8') as ep_file:
             json.dump(json_items, ep_file, ensure_ascii=False, indent=2)
 
 
@@ -84,8 +87,10 @@ def process_output_splunk(json_items, output, sourcetype_value):
 
         # load and read the config file
         logging.info("Parsing the Splunk Configuration")
+        splunk_conf_path = api_conf.splunk_conf_path
+        splunk_final_path = get_file_location(splunk_conf_path)
         splunk_conf = cp.ConfigParser()
-        splunk_conf.read('sophos_central_api_connector/config/splunk_config.ini')
+        splunk_conf.read(splunk_final_path)
 
         # splunk_trans config info
         host = splunk_conf.get('splunk_transform', 'host')
@@ -109,3 +114,9 @@ def process_output_splunk(json_items, output, sourcetype_value):
         splunk_events = splunk_trans_output(json_items, sourcetype_value)
 
     return splunk_events
+
+
+def get_file_location(process_path):
+    dir_name = os.path.dirname(__file__)
+    final_path = "{0}{1}".format(dir_name,process_path)
+    return final_path
