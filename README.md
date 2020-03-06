@@ -32,6 +32,12 @@ Want to test as quickly as possible? Follow the below quick start steps to begin
    1. ```
       python sophos_central_main.py --help
       ```
+1. Add your Sophos Central API id and secret to the sophos_config.ini under the folder: \Lib\site-packages\sophos_central_api_connector\config
+
+> #### **Important!**
+> We would recommend that the static entry is only used for testing purposes and the token is stored and accessed securely.
+> Please reference the authnetication section under advanced usage to use the correct parameter
+
 Read the below documentation for more in depth commands and usage:
 
 ## Getting Started
