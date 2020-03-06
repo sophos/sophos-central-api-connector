@@ -7,6 +7,33 @@ Python library to gather alerts and endpoint data from your Sophos Central tenan
 
 Sophos Central API Documentation: https://developer.sophos.com/
 
+## Quick start
+Want to test as quickly as possible? Follow the below quick start steps to begin looking at your Sophos Central data!
+1. Install latest Python 3 to the host
+1. Create a folder on the test machine e.g "sophos_test"
+1. Open a command prompt
+1. Create a Python Virtual Environment:
+   1. ```
+      python -m venv <folder_name>
+      ```
+1. Activate the Python Virtual Environment:
+   1. ```
+      <path_to_folder>\Scripts\activate
+      ```
+1. Install the Sophos Central API Connector (this will also install the requirements):
+   1. ```
+      pip install sophos-central-api-connector
+      ```
+1. Once it has finished installing browse to:
+   1. ```
+      cd <path_to_folder>\Lib\site-packages\sophos_central_api_connector
+      ```
+1. Run the following command to view help to begin:
+   1. ```
+      python sophos_central_main.py --help
+      ```
+Read the below documentation for more in depth commands and usage:
+
 ## Getting Started
 The below instructions will take you through obtaining a copy of the project and details on how to obtain an Sophos Central API key.
 
@@ -15,7 +42,7 @@ In order to use the package you will require a valid API key from your Sophos Ce
 
 ### Install
 ```
-pip3 install --user sophos_central_api_connector
+pip install --user sophos_central_api_connector
 ```
 
 ## Basic Examples
@@ -24,14 +51,14 @@ pip3 install --user sophos_central_api_connector
 To get information on the CLI commands when using the `sophos_central_main.py` simply run:
 
 ```
-python3 sophos_central_main.py --help
+python sophos_central_main.py --help
 ```
 
 ### Tenants List
 To get a list of tenants:
 
 ```
-python3 sophos_central_main.py --auth <auth_option> --get tenants
+python sophos_central_main.py --auth <auth_option> --get tenants
 ```
 ### Endpoint Information
 
@@ -41,7 +68,7 @@ There are various products which can utilise data from stdout such as running a 
 
 The syntax to use when requesting to get inventory is the following:
 ```
-python3 sophos_central_main.py --auth <auth_option> --get inventory --output <output_option>
+python sophos_central_main.py --auth <auth_option> --get inventory --output <output_option>
 ```
 
 ### Alert/Event Information
@@ -57,7 +84,7 @@ As with calling the inventory option, you can pull alerts for a specific tenant 
 
 Sophos Central holds event data for 90 days, so when calling the days parameter you can specifiy days as an integer from 1-90. If no days parameter is passed a default of 1 day is set. below is an example of passing the days parameter:
 ```
-python3 sophos_central_main.py --auth <auth_option> --get alerts --days <integer: 1-90> --output <output_option>
+python sophos_central_main.py --auth <auth_option> --get alerts --days <integer: 1-90> --output <output_option>
 ```
 ## Configuration
 The following configuration files can be changed to reflect your environment and also your needs.
@@ -154,7 +181,7 @@ The polling option is available for alert events. This is so you can gather aler
 
 The correct syntax to poll for alert events is as follows:
 ```
-python3 sophos_central_main.py --auth <auth_option> --get alerts --days <integer: 1-90> --poll_alerts --output <splunk or splunk_trans>
+python sophos_central_main.py --auth <auth_option> --get alerts --days <integer: 1-90> --poll_alerts --output <splunk or splunk_trans>
 ```
 On the initial run of this syntax the following files will be created:
 - poll_config.json
@@ -171,7 +198,7 @@ This file maintains a list of events which have already been successfully sent t
 If you need to reset the polling and start re-pulling in events you can pass the reset parameter to initiate this. Along with the reset parameter you can also pass the days parameter in order to specify how many days should be pulled using the API. Syntax on how to pass this is as follows:
 
 ```
-python3 sophos_central_main.py --auth <auth_option> --get alerts --days <integer: 1-90> --reset --poll_alerts --output <splunk or splunk_trans>
+python sophos_central_main.py --auth <auth_option> --get alerts --days <integer: 1-90> --reset --poll_alerts --output <splunk or splunk_trans>
 ```
 
 Running this syntax will delete the files:
