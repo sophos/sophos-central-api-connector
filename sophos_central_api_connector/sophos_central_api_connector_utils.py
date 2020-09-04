@@ -93,7 +93,11 @@ def validate_page_size(page_size, api):
     if api == "endpoint":
         # Verify the page sizes for the endpoint api
         logging.info("Verifying page size requested")
-        if int(page_size) > api_conf.max_inv_page:
+        if page_size == "":
+            # if no value is set then a default value is passed for this variable
+            logging.info("No value set in the config. Apply default.")
+            page_size = 50
+        elif int(page_size) > api_conf.max_inv_page:
             # Returns an error if the size of the page passed is greater than the max
             logging.error("Inventory page size has a max of: {0}".format(api_conf.max_inv_page))
             logging.error("Please ensure that the value in config.ini is less than or equal to this")
@@ -102,13 +106,9 @@ def validate_page_size(page_size, api):
             # Continues if the page size set is less than or equal to the max
             logging.info("Applying setting from config. Setting is less than or equal to the maximum allowed")
             pass
-        else:
-            # if no value is set then a default value is passed for this variable
-            logging.info("No value set in the config. Apply default.")
-            page_size = 50
     elif api == "common":
         # Verify the page sizes for the common api
-        if page_size is None:
+        if page_size == "":
             # set a limit if no page_size is passed
             logging.info("No value set in the config. Apply default.")
             page_size = 50

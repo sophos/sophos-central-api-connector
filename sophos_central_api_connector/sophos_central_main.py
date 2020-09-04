@@ -2,7 +2,7 @@ import logging
 import argparse as ap
 import configparser as cp
 from re import match
-from sys import exit, platform
+from sys import exit
 from os import path
 
 from sophos_central_api_connector import sophos_central_api_auth as api_auth, sophos_central_api_output as api_output, \
@@ -50,7 +50,8 @@ def get_inventory(tenant_info, output, page_size, splunk_creds=None, tenant=None
         if output == "splunk" or output == "splunk_trans":
             logging.info("Passing inventory to Splunk")
             # splunk argument passed, send the data to splunk
-            splunk_hec.send_to_splunk(api, events, splunk_creds, sourcetype_value, tenant_id, from_str=None, to_str=None,
+            splunk_hec.send_to_splunk(api, events, splunk_creds, sourcetype_value, tenant_id, from_str=None,
+                                      to_str=None,
                                       alerts_exists=None, temp_exists=None, alertids_exists=None, poll=None)
             # Completed gathering data for this tenant
             logging.info("Completed processing for Tenant ID: {0}".format(tenant_id))
@@ -136,8 +137,8 @@ def get_alerts(tenant_info, output, poll, days, reset_flag, page_size, splunk_cr
                 logging.info("Splunk output selected. Send events")
                 # pass the event data to the HEC script to be processed and sent to Splunk
                 splunk_hec.send_to_splunk(api, events, splunk_creds, sourcetype_value, tenant_id,
-                                                                  from_str, to_str, alerts_exists, temp_exists,
-                                                                  alertids_exists, poll)
+                                          from_str, to_str, alerts_exists, temp_exists,
+                                          alertids_exists, poll)
                 logging.info("Completed processing for Tenant ID: {0}".format(tenant_id))
             else:
                 pass
@@ -146,7 +147,7 @@ def get_alerts(tenant_info, output, poll, days, reset_flag, page_size, splunk_cr
         logging.info("Completed processing for Tenant ID: {0}".format(tenant_id))
 
     if poll:
-        #If the polling parameter has been passed need to finalise the config and events
+        # If the polling parameter has been passed need to finalise the config and events
         api_poll.finalise_polling(poll, to_str)
 
     logging.info("Gathering alert data complete")
@@ -205,7 +206,7 @@ def get_splunk_creds(splunk_final_path):
                     exit(1)
                 else:
                     logging.info("HEC token is in a valid format")
-                    #splunk_creds = {'tok': '{0}'.format(splunk_token)}
+                    # splunk_creds = {'tok': '{0}'.format(splunk_token)}
                     splunk_creds = splunk_token
                     return splunk_creds
             except Exception("AWSException") as aws_exception:
@@ -236,9 +237,10 @@ def get_sophos_creds(sophos_auth, sophos_final_path):
         logging.info("Static API credentials parameter, has been passed. Getting value from config")
         client_id = sophos_conf.get('static', 'client_id')
         client_secret = sophos_conf.get('static', 'client_secret')
-        if client_secret is None or client_id is None:
+        if int(len(client_secret)) == 0 or int(len(client_id)) == 0:
             # verifies that there is something in the variable
-            logging.info("Please verify the static credentials are valid in config.ini")
+            logging.error("Please verify the static credentials are valid in config.ini")
+            exit(1)
         else:
             logging.info("Values have been applied to the credential variables")
             return client_id, client_secret
@@ -268,8 +270,8 @@ def get_sophos_creds(sophos_auth, sophos_final_path):
 
 
 def get_file_location(process_path):
-    dir_name = path.dirname(__file__)
-    final_path = "{0}{1}".format(dir_name,process_path)
+    dir_name = path.dirname(path.abspath(__file__))
+    final_path = "{0}{1}".format(dir_name, process_path)
     return final_path
 
 
@@ -365,7 +367,6 @@ def main(args):
 
 # this is executed if the script is called from the command line.
 if __name__ == "__main__":
-
     # Parse the various parameters to be used when calling the main script.
     parser = ap.ArgumentParser(formatter_class=ap.RawTextHelpFormatter,
                                description="sophos_central_main.py:\n\nThis script utilises the Sophos Central API. "
@@ -380,7 +381,7 @@ if __name__ == "__main__":
                         help="Allows to specify one tenant\nIf this argument is not specified all tenants will apply.")
     parser.add_argument('-o', '--output', choices=['stdout', 'json', 'splunk', 'splunk_trans'], default="stdout",
                         help="Allows you to specify an output method for the data retrieved. If no option is selected"
-                        "it will default to stdout.")
+                             "it will default to stdout.")
     parser.add_argument('-pa', '--poll_alerts', action='store_true',
                         help="N.B. This parameter only works with the '--get alerts' parameter:\nCalling this "
                              "parameter will set the value to true, in doing so it will maintain a config of when the "
