@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 # read the contents of your README file
 from os import path
@@ -16,7 +16,7 @@ setup(name='sophos_central_api_connector',
       url="https://github.com/sophos-cybersecurity/sophos-central-api-connector",
       include_package_data=True,
       setup_requires=["setuptools_scm"],
-      packages=find_packages(),
+      packages=['sophos_central_api_connector', 'sophos_central_api_connector.config'],
       classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
