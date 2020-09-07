@@ -1,7 +1,7 @@
 # sophos-central-api-connector
 [![Generic badge](https://img.shields.io/badge/Python-v3.7-blue.svg)](https://shields.io/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Generic badge](https://img.shields.io/badge/version-0.1.0-green.svg)](https://shields.io/)
+[![Generic badge](https://img.shields.io/badge/version-0.1.1-green.svg)](https://shields.io/)
 
 Python library to gather alerts and endpoint data from your Sophos Central tenants
 
@@ -36,7 +36,7 @@ Want to test as quickly as possible? Follow the below quick start steps to begin
 
 > #### **Important!**
 > We would recommend that the static entry is only used for testing purposes and the token is stored and accessed securely.
-> Please reference the authnetication section under advanced usage to use the correct parameter
+> Please reference the authentication section under advanced usage to use the correct parameter
 
 Read the below documentation for more in depth commands and usage:
 
