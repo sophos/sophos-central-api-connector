@@ -1,0 +1,1 @@
+recursive-include sophos_central_api_connector *.ini *.py

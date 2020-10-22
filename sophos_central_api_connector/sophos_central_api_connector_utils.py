@@ -1,11 +1,61 @@
 import logging
+import requests
 from requests.utils import requote_uri
 from datetime import datetime, timedelta
+from time import sleep
+from os import path
 from sophos_central_api_connector.config import sophos_central_api_config as api_conf
 
 # static global entries for the urls of the apis for Sophos Central
 endpoint_url = api_conf.endpoints_uri
 alerts_url = api_conf.alerts_uri
+settings_url = api_conf.settings_uri
+
+
+def gather_category_data(tenant_info):
+    # create url for the category information
+    logging.info("Gathering categorization data")
+    url_values = tenant_info.values()
+    url_iter = iter(url_values)
+    cat_url = next(url_iter)
+    pageurl = "{0}{1}{2}".format(cat_url["page_url"], settings_url, "/web-control/categories")
+    headers = dict(cat_url['headers'])
+
+    try:
+        cat_res = requests.get(pageurl, headers=headers)
+    except requests.exceptions.HTTPError as err_http:
+        logging.error("HTTP Error:", err_http)
+        logging.info(err_http)
+    # if rate limit is hit then attempt to restrict
+    if cat_res.status_code == 429:
+        error = True
+        logging.info("Error {0}: Backing off!".format(cat_res.status_code))
+        while error:
+            try:
+                ep_res = requests.get(pageurl, headers=headers)
+            except requests.exceptions.HTTPError as err_http:
+                logging.error("HTTP Error:", err_http)
+                logging.info(err_http)
+                if cat_res.status_code == 200:
+                    ep_data = cat_res.json()
+                    return ep_data
+                elif cat_res.status_code == 429:
+                    logging.error("Still hitting the rate limit!")
+                    sleep(delay_time)
+                    delay_time = delay_time * 2
+                    logging.info("Delayed by: {0}".format(delay_time))
+                elif cat_res.status_code != 200:
+                    logging.error("Response code is not 200")
+                    raise Exception('API response: {0}'.format(cat_res.status_code))
+    elif cat_res.status_code == 200:
+        # success response pass back data to build json
+        logging.debug(cat_res.headers)
+        ep_data = cat_res.json()
+        return ep_data
+    else:
+        # details on the response code and error
+        logging.error("Response Code: {0}".format(cat_res.status_code))
+        logging.error("Error Details: {0}".format(cat_res.content))
 
 
 def generate_tenant_urls(tenant_info, page_size, api, from_str, to_str):
@@ -32,6 +82,17 @@ def generate_tenant_urls(tenant_info, page_size, api, from_str, to_str):
             pageurl = requote_uri(decoded_url)
             tenant_url_data[ten_id] = {"filename": "{0}{1}{2}{3}".format(ten_item["name"], "_", ten_id, ".json"),
                                        "orig_url": pageurl, "pageurl": pageurl,
+                                       "headers": ten_item["headers"]}
+        return tenant_url_data
+    elif api == "local-sites":
+        # api for local sites has been passed. For loop to generate the headers for each of the tenant ids
+        for ten_id, ten_item in tenant_info.items():
+            tenant_url_data[ten_id] = {"filename": "{0}{1}{2}{3}".format(ten_item["name"], "_", ten_id, ".json"),
+                                       "orig_url": "{0}{1}{2}".format(ten_item["page_url"], settings_url,
+                                                                      "/web-control/local-sites"),
+                                       "pageurl": "{0}{1}{2}?pageSize={3}".format(ten_item['page_url'], settings_url,
+                                                                                  "/web-control/local-sites",
+                                                                                  page_size),
                                        "headers": ten_item["headers"]}
         return tenant_url_data
     else:
@@ -121,5 +182,26 @@ def validate_page_size(page_size, api):
             logging.error("Alerts page size has a max of: {0}".format(api_conf.max_alerts_page))
             logging.error("Please ensure that the value in config.ini is less than or equal to this")
             exit(1)
+    elif api == "local-sites":
+        # Verify the page sizes for the local sites api
+        if page_size == "":
+            # set a limit if no page_size is passed
+            logging.info("No value set in the config. Apply default.")
+            page_size = 50
+        elif int(page_size) <= api_conf.max_localsite_page:
+            # Continues if the page size set is less than or equal to the max
+            logging.info("Applying setting from config. Setting is less than or equal to the maximum allowed")
+            pass
+        elif int(page_size) > api_conf.max_localsite_page:
+            # Returns an error if the size of the page passed is greater than the max
+            logging.error("Local Sites page size has a max of: {0}".format(api_conf.max_localsite_page))
+            logging.error("Please ensure that the value in config.ini is less than or equal to this")
+            exit(1)
 
     return page_size
+
+
+def get_file_location(process_path):
+    dir_name = path.dirname(path.abspath(__file__))
+    final_path = "{0}{1}".format(dir_name, process_path)
+    return final_path
