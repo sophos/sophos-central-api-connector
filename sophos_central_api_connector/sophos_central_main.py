@@ -4,12 +4,101 @@ import configparser as cp
 from re import match
 from sys import exit
 from os import path
-
 from sophos_central_api_connector import sophos_central_api_auth as api_auth, sophos_central_api_output as api_output, \
     sophos_central_api_get_data as get_api, sophos_central_api_polling as api_poll, \
     sophos_central_hec_splunk as splunk_hec, sophos_central_api_awssecrets as awssec, \
-    sophos_central_api_connector_utils as api_utils, sophos_central_api_tenants as api_tenant
+    sophos_central_api_connector_utils as api_utils, sophos_central_api_tenants as api_tenant, sophos_central_api_intelix \
+    as intx, sophos_central_api_delete_data as del_api
 from sophos_central_api_connector.config import sophos_central_api_config as api_conf
+
+
+# This will retrieve a list of local sites you have set in the global settings of your selected tenant(s)
+def get_local_sites(tenant_info, output, page_size, tenant=None, intelix=None):
+    # Set api type
+    api = "local-sites"
+
+    # Validate page size set
+    page_size = api_utils.validate_page_size(page_size, api)
+
+    # Generate urls for tenants
+    tenant_url_data = api_utils.generate_tenant_urls(tenant_info, page_size, api, from_str=None, to_str=None)
+
+    #Gather the categorization information
+    cat_data = api_utils.gather_category_data(tenant_info)
+
+    for key, value in tenant_url_data.items():
+        # If a tenant has been passed in the CLI arguments it checks whether it exists in the tenants obtained
+        if tenant == key:
+            # The tenant passed has been found
+            logging.info("Tenant ID passed: {0}".format(key))
+            tenant_url_data = {key: value}
+        else:
+            # Does not match tenant data
+            pass
+
+    new_ls = dict()
+    for ten_id, ten_item in tenant_url_data.items():
+        # Pass the ten_url_data and gather the alerts
+        logging.info("Gathering local site information")
+        tenant_id = ten_id
+        # get data information for the tenant in the loop
+        json_data = get_api.get_data(tenant_url_data, page_size, tenant_id, api)
+        for site_id, site_value in json_data.items():
+            # grab the correct site category information
+            cat_val = cat_data[site_value.setdefault('categoryId', 0)]
+            # reconstruct dictionary using id as main key and include category if present
+            cat_dict = {"tenantId": tenant_id, "categoryId": site_value.setdefault('categoryId','NA'),"categoryName":
+                cat_val['name'], "tags": site_value.setdefault('tags', 'NA'),"url": site_value['url']}
+            new_ls["{0}".format(site_value['id'])] = cat_dict
+        # process data by the output parameter
+        if not intelix:
+            api_output.process_output(output, new_ls, tenant_url_data, tenant_id, api, sourcetype_value=None)
+        else:
+            pass
+
+        # Completed gathering data for this tenant
+        logging.info("Completed processing for Tenant ID: {0}".format(tenant_id))
+
+    if intelix:
+        # return the local-site information for processing
+        return new_ls, tenant_id, tenant_url_data
+    else:
+        logging.info("Gathering local-site data complete")
+        exit(0)
+
+
+def intelix_check(tenant_info, output, page_size, tenant, intelix, intelix_client_id, intelix_client_secret,
+                  intx_clean_level, intx_dry_run):
+    output = None
+    # gather the local site information to be sent to intelix
+    local_site_data, tenant_id, tenant_url_data = get_local_sites(tenant_info, output, page_size, tenant, intelix)
+
+    # query intelix data for whether sites are detected
+    intelix_results = intx.local_site_check(intelix_client_id, intelix_client_secret, local_site_data, tenant_id)
+
+    if intelix:
+        if intelix == "report":
+            # construct report for the local site information
+            logging.info("Intelix reporting selected")
+            intelix_report = intx.intelix_report_info(intelix_results, intelix, intx_clean_level, intx_dry_run)
+            exit(0)
+        elif intelix == "clean_ls":
+            logging.info("Clean local-sites selected")
+            # prepare local-sites for the risk level selected for intelix
+            del_dict = intx.prepare_del_dict(intx_clean_level, intelix_results)
+            # check if it is a dry-run, if so generate report
+            if intx_dry_run:
+                logging.info("Generating dry-run report for deleting '{0}' local-sites from Central"
+                             .format(intx_clean_level))
+                logging.info("This never includes sites which are 'UNCLASSIFIED' or 'NULL'")
+                dry_run_report = intx.intelix_report_info(del_dict, intelix, intx_clean_level, intx_dry_run)
+            else:
+                logging.info("Commence deleting sites with '{0}' risk level local-sites from Central"
+                             .format(intx_clean_level))
+                logging.info("This never includes sites which are 'UNCLASSIFIED' or 'NULL'")
+                intelix_clean = del_api.delete_local_site(del_dict, tenant_url_data)
+                intx.intelix_del_info(intelix_clean, tenant_url_data)
+                exit(0)
 
 
 # This will retrieve inventory information from the tenants
@@ -268,6 +357,41 @@ def get_sophos_creds(sophos_auth, sophos_final_path):
             "No authentication or an incorrect authentication method has been specified.\nPlease run --help for "
             "further information")
 
+def get_intelix_auth(sophos_auth, intelix_final_path):
+    # load and read the sophos config file
+    intelix_conf = cp.ConfigParser(allow_no_value=True)
+    intelix_conf.read(intelix_final_path)
+
+    if sophos_auth == "static":
+        # Auth is static so the creds are pulled from the config
+        logging.info("Static API credentials parameter, has been passed. Getting value from config")
+        client_id = intelix_conf.get('static', 'client_id')
+        client_secret = intelix_conf.get('static', 'client_secret')
+        if int(len(client_secret)) == 0 or int(len(client_id)) == 0:
+            # verifies that there is something in the variable
+            logging.error("Please verify the static credentials are valid in config.ini")
+            exit(1)
+        else:
+            logging.info("Values have been applied to the credential variables")
+            return intelix_client_id, intelix_client_secret
+    elif sophos_auth == "aws":
+        # Creds are held in AWS, gather the config information
+        logging.info("Attempting to get Sophos Intelix API credentials from AWS Secrets Manager")
+        client_id_key = intelix_conf.get('intelix', 'client_id_key')
+        client_secret_key = intelix_conf.get('intelix', 'client_secret_key')
+        secret_name = intelix_conf.get('intelix', 'secret_name')
+        region_name = intelix_conf.get('intelix', 'region_name')
+        try:
+            # Pull the credentials from AWS Secret Manager and pass to initialise Sophos Central API
+            aws_secret = awssec.get_secret(secret_name, region_name)
+            intelix_client_id = aws_secret[client_id_key]
+            intelix_client_secret = aws_secret[client_secret_key]
+            logging.info("Values have been applied to the Intelix credential variables")
+            return intelix_client_id, intelix_client_secret
+        except Exception as aws_exception:
+            # Return the exception raised from the aws secrets script
+            raise aws_exception
+
 
 def get_file_location(process_path):
     dir_name = path.dirname(path.abspath(__file__))
@@ -289,6 +413,11 @@ def main(args):
     splunk_final_path = get_file_location(splunk_conf_path)
     sophos_conf_path = api_conf.sophos_conf_path
     sophos_final_path = get_file_location(sophos_conf_path)
+    intelix_conf_path = api_conf.intelix_conf_path
+    intelix_final_path = get_file_location(intelix_conf_path)
+    intelix = args.intelix
+    intx_clean_level = args.clean_level
+    intx_dry_run = args.dry_run
 
     # Set authorisation and whoami URLs
     auth_url = api_conf.auth_uri
@@ -296,7 +425,7 @@ def main(args):
     partner_url = api_conf.tenants_ptr_uri
     organization_url = api_conf.tenants_org_uri
 
-    # Get sophos config
+    # Get sophos and intelix configs
     sophos_conf = cp.ConfigParser(allow_no_value=True)
     sophos_conf.read(sophos_final_path)
 
@@ -357,6 +486,33 @@ def main(args):
         page_size = sophos_conf.get('page_size', 'alerts_ps')
         # begin the process to gather alert information
         get_alerts(tenant_info, output, poll, days, reset_flag, page_size, splunk_creds, tenant)
+    elif get == "local-sites":
+        logging.info("local-sites parameter passed.")
+        page_size = sophos_conf.get('page_size', 'settings_ps')
+        # begin the process to gather local-site information
+        get_local_sites(tenant_info, output, page_size, tenant)
+    elif intelix == "report":
+        logging.info("Compare local-sites with SophosLabs Intelix classifications")
+        intelix_client_id, intelix_client_secret = get_intelix_auth(sophos_auth, intelix_final_path)
+        logging.info("Gather local-sites from Sophos Central tenants")
+        page_size = sophos_conf.get('page_size', 'settings_ps')
+        intelix_check(tenant_info, output, page_size, tenant, intelix, intelix_client_id, intelix_client_secret,
+                      intx_clean_level, intx_dry_run)
+    elif intelix == "clean_ls":
+        if intx_clean_level:
+            intelix_client_id, intelix_client_secret = get_intelix_auth(sophos_auth, intelix_final_path)
+            page_size = sophos_conf.get('page_size', 'settings_ps')
+            intelix_check(tenant_info, output, page_size, tenant, intelix, intelix_client_id, intelix_client_secret,
+                          intx_clean_level, intx_dry_run)
+            exit(0)
+        else:
+            logging.error("To run the clean_ls argument a clean_level must be provided. You can run a dry run to see"
+                          " what the effect of command would be to prevent items being deleted from Central")
+            exit(1)
+    elif intelix == "test":
+        intelix_client_id, intelix_client_secret = get_intelix_auth(intelix_final_path)
+        url = "sophos.com"
+        intx.test(intelix_client_id, intelix_client_secret, url)
     else:
         # invalid get parameter has been passed
         logging.error("Invalid --get parameter passed")
@@ -375,7 +531,7 @@ if __name__ == "__main__":
                                            "https://developer.sophos.com/intro")
     parser.add_argument('-a', '--auth', choices=['static', 'aws'], required=True,
                         help="This is a required option to specify which auth method to use.")
-    parser.add_argument('-g', '--get', choices=['inventory', 'alerts', 'tenants'],
+    parser.add_argument('-g', '--get', choices=['inventory', 'alerts', 'tenants', 'local-sites'],
                         help="This will set what information to get from tenants")
     parser.add_argument('-t', '--tenant',
                         help="Allows to specify one tenant\nIf this argument is not specified all tenants will apply.")
@@ -393,6 +549,14 @@ if __name__ == "__main__":
                         help="Setting this flag with the poll_alerts and days flags will reset the poll config")
     parser.add_argument('-ll', '--log_level', choices=['INFO', 'DEBUG', 'CRITICAL', 'WARNING', 'ERROR'],
                         help="Set logging level mode for more detailed error information, default is disabled")
+    parser.add_argument('-i', '--intelix', choices=['report', 'clean_ls', 'test'], help="Generate "
+                            "a check of local-sites and advise whether they are detected by SophosLabs")
+    parser.add_argument('-cl', '--clean_level', choices=['ALL', 'HIGH', 'HIGH_MEDIUM', 'MEDIUM', 'LOW'],
+                        help="Allows you to set the risk level for deleting local-sites from Sophos Central. It will "
+                             "check Intelix for SophosLabs Risk assessment and delete on this value. Not what is set in"
+                             "Sophos Central")
+    parser.add_argument('-dr', '--dry_run', action='store_true', help="Allows you to run the local-sites clean option "
+                                                                      "and report on what would have been deleted")
 
     # parse the argument values to the arg variable
     args = parser.parse_args()

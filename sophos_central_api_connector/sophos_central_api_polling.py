@@ -347,8 +347,8 @@ def finalise_polling(poll, to_str):
         else:
             # if there are new alerts then go through old alerts and add them to the new events in alert_ids.json
             for (old_id, old_id_value) in old_alerts.items():
-                    old_ev = {old_id: old_id_value}
-                    new_alerts.update(old_ev)
+                old_ev = {old_id: old_id_value}
+                new_alerts.update(old_ev)
 
             with open(poll_alerts_path, 'w', encoding='utf-8') as combined_alerts:
                 json.dump(new_alerts, combined_alerts, ensure_ascii=False, indent=2)
@@ -386,7 +386,8 @@ def finalise_polling(poll, to_str):
     else:
         pass
 
+
 def get_file_location(process_path):
     dir_name = path.dirname(__file__)
-    final_path = "{0}{1}".format(dir_name,process_path)
+    final_path = "{0}{1}".format(dir_name, process_path)
     return final_path
