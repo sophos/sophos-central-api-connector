@@ -56,6 +56,7 @@ def local_site_check(intelix_client_id, intelix_client_secret, request_data, ten
     compared_dict = site_comparison(intelix_dict, request_data, tenant_id)
     return compared_dict
 
+
 def get_ip_category_risk(ip_cat):
     # get config information
     intelix_conf_path = api_conf.intelix_conf_path
@@ -220,7 +221,7 @@ def test(intelix_client_id, intelix_client_secret, test_url):
 
     # check if the url_value is an ip
     try:
-        ip_address(url_value)
+        ip_address(test_url)
         ip_val = True
     except:
         ip_val = False
@@ -234,6 +235,9 @@ def test(intelix_client_id, intelix_client_secret, test_url):
         intx.url_lookup(test_url)
         intx_data = {"requestId": intx.requestId, "productivityCategory": intx.productivityCategory,
                      "securityCategory": intx.securityCategory, "riskLevel": intx.riskLevel}
+
+    return intx_data
+
 
 def prepare_del_dict(intx_clean_level, combined_results):
     # go through the combined list and extract the entries which match clean-level

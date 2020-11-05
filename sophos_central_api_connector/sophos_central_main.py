@@ -510,9 +510,12 @@ def main(args):
                           " what the effect of command would be to prevent items being deleted from Central")
             exit(1)
     elif intelix == "test":
-        intelix_client_id, intelix_client_secret = get_intelix_auth(intelix_final_path)
+        intelix_client_id, intelix_client_secret = get_intelix_auth(sophos_auth, intelix_final_path)
         url = "sophos.com"
-        intx.test(intelix_client_id, intelix_client_secret, url)
+        test_result = intx.test(intelix_client_id, intelix_client_secret, url)
+        print()
+        print("Intelix Test Result: {0}".format(url))
+        print(test_result)
     else:
         # invalid get parameter has been passed
         logging.error("Invalid --get parameter passed")
