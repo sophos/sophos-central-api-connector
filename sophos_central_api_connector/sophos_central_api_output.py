@@ -142,3 +142,21 @@ def process_output_splunk(json_items, output, sourcetype_value):
         splunk_events = splunk_trans_output(json_items, sourcetype_value)
 
     return splunk_events
+
+
+def process_output_temp(tmp_dict, filename):
+    try:
+        tmp_path = api_conf.temp_path
+        final_tmp_path = api_utils.get_file_location(tmp_path)
+        # noinspection PyPep8
+        logging.info("Attempting to write file: {0}\{1}".format(final_tmp_path, filename))
+        if not os.path.exists(final_tmp_path):
+            os.makedirs(final_tmp_path)
+        with open(os.path.join(final_tmp_path, filename), "w", encoding='utf-8') as tmp_file:
+            json.dump(tmp_dict, tmp_file, ensure_ascii=False, indent=2)
+    except IOError:
+        logging.error("Unable to write file: {0}\{1}".format(final_tmp_path, filename))
+        return False
+    else:
+        tmp_file.close()
+        return True

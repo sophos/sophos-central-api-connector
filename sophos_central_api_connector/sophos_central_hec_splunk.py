@@ -26,7 +26,7 @@ def send_to_splunk(api, splunk_events, splunk_creds, sourcetype_value, tenant_id
         # if the api is common post the alerts to splunk
         logging.info("Length of splunk events passed to post_alerts: {0}".format(len(splunk_events)))
         post_alerts(from_str, temp_exists, poll, splunk_events, main_splunk_url, request_ack, channel, splunk_headers,
-                                 tenant_id)
+                    tenant_id)
     elif api == "endpoint":
         # if the api is endpoint post the inventory data to splunk
         logging.info("Length of splunk events passed to post_inventory: {0}".format(len(splunk_events)))
@@ -95,9 +95,9 @@ def post_alerts(from_str, temp_exists, poll, spl_events, main_splunk_url, reques
         send_count += 1
         # send the extracted information to splunk
         hec_response_code, failed_id = post_events_to_splunk(spl_event, splunk_headers,
-                                                                                 main_splunk_url, send_count,
-                                                                                 request_ack, event_data,
-                                                                                 event_id, poll, channel)
+                                                             main_splunk_url, send_count,
+                                                             request_ack, event_data,
+                                                             event_id, poll, channel)
 
 
 def post_inventory(splunk_events, main_splunk_url, request_ack, channel, splunk_headers, poll):
@@ -115,9 +115,9 @@ def post_inventory(splunk_events, main_splunk_url, request_ack, channel, splunk_
         spl_event = json.dumps(spl_event)
         send_count += 1
         hec_response_code, failed_id = post_events_to_splunk(spl_event, splunk_headers,
-                                                                                 main_splunk_url, send_count,
-                                                                                 request_ack, event_data,
-                                                                                 event_id, poll, channel)
+                                                             main_splunk_url, send_count,
+                                                             request_ack, event_data,
+                                                             event_id, poll, channel)
 
 
 def post_events_to_splunk(spl_event, splunk_headers, main_splunk_url, send_count, request_ack, event_data, event_id,
@@ -230,5 +230,5 @@ def event_failure(spl_event, poll, failed_id):
 
 def get_file_location(process_path):
     dir_name = path.dirname(__file__)
-    final_path = "{0}{1}".format(dir_name,process_path)
+    final_path = "{0}{1}".format(dir_name, process_path)
     return final_path

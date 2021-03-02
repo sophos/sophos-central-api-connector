@@ -40,7 +40,8 @@ def local_site_check(intelix_client_id, intelix_client_secret, request_data, ten
         elif not ip_val:
             # send_url_lookup
             intx.url_lookup(url_value)
-            intx_data = {"lookup_type": "url", "requestId": intx.requestId, "productivityCategory": intx.productivityCategory,
+            intx_data = {"lookup_type": "url", "requestId": intx.requestId,
+                         "productivityCategory": intx.productivityCategory,
                          "securityCategory": intx.securityCategory, "riskLevel": intx.riskLevel}
             intelix_dict[url_value] = intx_data
         else:
@@ -83,7 +84,7 @@ def get_ip_category_risk(ip_cat):
     elif maxRisk == "3":
         maxRisk = "MEDIUM"
     elif maxRisk == "4":
-        maxRisk= "HIGH"
+        maxRisk = "HIGH"
 
     return maxRisk
 
@@ -106,7 +107,7 @@ def site_comparison(intelix_dict, site_dict, tenant_id):
         for intx_key, intx_val in intelix_dict.items():
             if site_val['url'] == intx_key:
                 if intx_val['lookup_type'] == 'url':
-                    intx_data = {"local-site": site_val},{"intelix": {"intelixCategory": intx_val.setdefault(
+                    intx_data = {"local-site": site_val}, {"intelix": {"intelixCategory": intx_val.setdefault(
                         'productivityCategory', 'null'), "intelixRisk": intx_val.setdefault('riskLevel', 'null'),
                         "intelixSecurity": intx_val.setdefault('securityCategory', 'null')}}
                     combined_dict[site_key] = intx_data
@@ -169,9 +170,9 @@ def intelix_report_info(intelix_results, intelix, intx_clean_level, intx_dry_run
             total_risk += 1
             null_risk += 1
         report_data = {"Totals": {"High Risk": high_risk, "Medium Risk": medium_risk,
-                                                           "Low Risk": low_risk, "Trusted": trusted_risk,
-                                                           "Unclassified": unclass_risk, "NULL": null_risk,
-                                                           "Total": total_risk}}
+                                  "Low Risk": low_risk, "Trusted": trusted_risk,
+                                  "Unclassified": unclass_risk, "NULL": null_risk,
+                                  "Total": total_risk}}
 
     if intelix == "report":
         logging.info("Generating report for Intelix results")
@@ -221,7 +222,7 @@ def test(intelix_client_id, intelix_client_secret, test_url):
 
     # check if the url_value is an ip
     try:
-        ip_address(test_url)
+        ip_address(url_value)
         ip_val = True
     except:
         ip_val = False
@@ -235,8 +236,6 @@ def test(intelix_client_id, intelix_client_secret, test_url):
         intx.url_lookup(test_url)
         intx_data = {"requestId": intx.requestId, "productivityCategory": intx.productivityCategory,
                      "securityCategory": intx.securityCategory, "riskLevel": intx.riskLevel}
-
-    return intx_data
 
 
 def prepare_del_dict(intx_clean_level, combined_results):

@@ -1,5 +1,6 @@
 import logging
 import requests
+import shutil
 from requests.utils import requote_uri
 from datetime import datetime, timedelta
 from time import sleep
@@ -10,6 +11,7 @@ from sophos_central_api_connector.config import sophos_central_api_config as api
 endpoint_url = api_conf.endpoints_uri
 alerts_url = api_conf.alerts_uri
 settings_url = api_conf.settings_uri
+livediscover_url = api_conf.livediscover_uri
 
 
 def gather_category_data(tenant_info):
@@ -81,7 +83,7 @@ def generate_tenant_urls(tenant_info, page_size, api, from_str, to_str):
             # the decoded urls are encoded so they are valid urls to be passed
             pageurl = requote_uri(decoded_url)
             tenant_url_data[ten_id] = {"filename": "{0}{1}{2}{3}".format(ten_item["name"], "_", ten_id, ".json"),
-                                       "orig_url": pageurl, "pageurl": pageurl,
+                                       "url": "{0}".format(ten_item["page_url"]), "orig_url": pageurl, "pageurl": pageurl,
                                        "headers": ten_item["headers"]}
         return tenant_url_data
     elif api == "local-sites":
@@ -93,6 +95,16 @@ def generate_tenant_urls(tenant_info, page_size, api, from_str, to_str):
                                        "pageurl": "{0}{1}{2}?pageSize={3}".format(ten_item['page_url'], settings_url,
                                                                                   "/web-control/local-sites",
                                                                                   page_size),
+                                       "headers": ten_item["headers"]}
+        return tenant_url_data
+    elif api == "live-discover":
+        # api for live discover has been passed. For loop to generate the headers for each of the tenant ids
+        for ten_id, ten_item in tenant_info.items():
+            tenant_url_data[ten_id] = {"filename": "{0}{1}{2}{3}".format(ten_item["name"], "_", ten_id, ".json"),
+                                       "url": "{0}".format(ten_item["page_url"]), "orig_url": "{0}{1}".format(ten_item["page_url"], livediscover_url),
+                                       "pageurl": "{0}{1}?pageSize={2}".format(ten_item['page_url'], livediscover_url,
+                                                                                  page_size), 
+                                       "name": "{0}".format(ten_item["name"]),
                                        "headers": ten_item["headers"]}
         return tenant_url_data
     else:
@@ -205,3 +217,33 @@ def get_file_location(process_path):
     dir_name = path.dirname(path.abspath(__file__))
     final_path = "{0}{1}".format(dir_name, process_path)
     return final_path
+
+
+def open_tmp_json(file):
+    # Open json file if available
+    try:
+        tmp_path = api_conf.temp_path
+        final_tmp_path = get_file_location(tmp_path)
+        with open(os.path.join(final_tmp_path, file), "r", encoding='utf-8') as tmp_file:
+            file = tmp_file.read()
+
+        file_data = json.loads(q_data)
+    except IOError:
+        logging.error("Unable to open file: {0}".format(final_tmp_path))
+
+    return file_data
+
+
+def clean_up():
+    tmp_path = api_conf.temp_path
+    final_tmp_path = api_utils.get_file_location(tmp_path)
+    if not os.path.exists(final_tmp_path):
+        logging.info("Nothing to clean up")
+    else:
+        logging.info("Deleting: {0}".format(final_tmp_path))
+        try:
+            shutil.rmtree(final_tmp_path)
+        except OSError as err:
+            logging.error("Error: {0} - {1}".format(err.filename, err.strerror))
+        else:
+            logging.info("{0} dir an contents successfully deleted".format(final_tmp_path))

@@ -7,8 +7,9 @@ from os import path
 from sophos_central_api_connector import sophos_central_api_auth as api_auth, sophos_central_api_output as api_output, \
     sophos_central_api_get_data as get_api, sophos_central_api_polling as api_poll, \
     sophos_central_hec_splunk as splunk_hec, sophos_central_api_awssecrets as awssec, \
-    sophos_central_api_connector_utils as api_utils, sophos_central_api_tenants as api_tenant, sophos_central_api_intelix \
-    as intx, sophos_central_api_delete_data as del_api
+    sophos_central_api_connector_utils as api_utils, sophos_central_api_tenants as api_tenant, \
+    sophos_central_api_intelix \
+        as intx, sophos_central_api_delete_data as del_api
 from sophos_central_api_connector.config import sophos_central_api_config as api_conf
 
 
@@ -23,7 +24,7 @@ def get_local_sites(tenant_info, output, page_size, tenant=None, intelix=None):
     # Generate urls for tenants
     tenant_url_data = api_utils.generate_tenant_urls(tenant_info, page_size, api, from_str=None, to_str=None)
 
-    #Gather the categorization information
+    # Gather the categorization information
     cat_data = api_utils.gather_category_data(tenant_info)
 
     for key, value in tenant_url_data.items():
@@ -47,8 +48,8 @@ def get_local_sites(tenant_info, output, page_size, tenant=None, intelix=None):
             # grab the correct site category information
             cat_val = cat_data[site_value.setdefault('categoryId', 0)]
             # reconstruct dictionary using id as main key and include category if present
-            cat_dict = {"tenantId": tenant_id, "categoryId": site_value.setdefault('categoryId','NA'),"categoryName":
-                cat_val['name'], "tags": site_value.setdefault('tags', 'NA'),"url": site_value['url']}
+            cat_dict = {"tenantId": tenant_id, "categoryId": site_value.setdefault('categoryId', 'NA'), "categoryName":
+                cat_val['name'], "tags": site_value.setdefault('tags', 'NA'), "url": site_value['url']}
             new_ls["{0}".format(site_value['id'])] = cat_dict
         # process data by the output parameter
         if not intelix:
@@ -357,6 +358,7 @@ def get_sophos_creds(sophos_auth, sophos_final_path):
             "No authentication or an incorrect authentication method has been specified.\nPlease run --help for "
             "further information")
 
+
 def get_intelix_auth(sophos_auth, intelix_final_path):
     # load and read the sophos config file
     intelix_conf = cp.ConfigParser(allow_no_value=True)
@@ -510,12 +512,9 @@ def main(args):
                           " what the effect of command would be to prevent items being deleted from Central")
             exit(1)
     elif intelix == "test":
-        intelix_client_id, intelix_client_secret = get_intelix_auth(sophos_auth, intelix_final_path)
+        intelix_client_id, intelix_client_secret = get_intelix_auth(intelix_final_path)
         url = "sophos.com"
-        test_result = intx.test(intelix_client_id, intelix_client_secret, url)
-        print()
-        print("Intelix Test Result: {0}".format(url))
-        print(test_result)
+        intx.test(intelix_client_id, intelix_client_secret, url)
     else:
         # invalid get parameter has been passed
         logging.error("Invalid --get parameter passed")
@@ -553,7 +552,7 @@ if __name__ == "__main__":
     parser.add_argument('-ll', '--log_level', choices=['INFO', 'DEBUG', 'CRITICAL', 'WARNING', 'ERROR'],
                         help="Set logging level mode for more detailed error information, default is disabled")
     parser.add_argument('-i', '--intelix', choices=['report', 'clean_ls', 'test'], help="Generate "
-                            "a check of local-sites and advise whether they are detected by SophosLabs")
+                                                                                        "a check of local-sites and advise whether they are detected by SophosLabs")
     parser.add_argument('-cl', '--clean_level', choices=['ALL', 'HIGH', 'HIGH_MEDIUM', 'MEDIUM', 'LOW'],
                         help="Allows you to set the risk level for deleting local-sites from Sophos Central. It will "
                              "check Intelix for SophosLabs Risk assessment and delete on this value. Not what is set in"

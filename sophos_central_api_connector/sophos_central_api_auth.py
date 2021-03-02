@@ -1,10 +1,75 @@
 import requests
 import logging
+import getpass
+import configparser as cp
+import sophos_central_api_connector.config.sophos_central_api_config as api_conf
+import sophos_central_api_connector.sophos_central_api_tenants as api_tenant
+import sophos_central_api_connector.sophos_central_api_connector_utils as api_utils
+import sophos_central_api_connector.sophos_central_api_awssecrets as awssecret
+
+
+def ten_auth():
+    sophos_conf_path = api_conf.sophos_conf_path
+    sophos_final_path = api_utils.get_file_location(sophos_conf_path)
+
+    sophos_conf = cp.ConfigParser(allow_no_value=True)
+    sophos_conf.read(sophos_final_path)
+    secret_name = sophos_conf.get('aws', 'secret_name')
+    region_name = sophos_conf.get('aws', 'region_name')
+
+    if secret_name and region_name:
+        try:
+            # Pull the credentials from AWS Secret Manager and pass to initialise Sophos Central API
+            aws_secret = awssecret.get_secret(secret_name, region_name)
+            client_id = aws_secret['client_id']
+            client_secret = aws_secret['client_secret']
+            logging.info(
+                "Values have been applied to the credential variables, attempt to initialize Sophos Central API")
+        except Exception as aws_exception:
+            # Return the exception raised from the aws secrets script
+            raise aws_exception
+    else:
+        logging.info("No AWS creds set in config. Requesting client_id and client_secret")
+        client_id = getpass.getpass(prompt="Provide Sophos Central API Client ID: ", stream=None)
+        if client_id:
+            client_secret = getpass.getpass(prompt="Provide Sophos Central API Client Secret: ", stream=None)
+        else:
+            logging.error("No Client ID provided. Exiting")
+            exit(1)
+
+    # Set authorisation and whoami URLs
+    auth_url = api_conf.auth_uri
+    whoami_url = api_conf.whoami_uri
+    partner_url = api_conf.tenants_ptr_uri
+    organization_url = api_conf.tenants_org_uri
+
+    # Get Sophos Central API Bearer Token for authorisation
+    sophos_access_token = get_bearer_tok(client_id, client_secret, auth_url)
+
+    # Construct id_headers
+    headers = validate_id_headers(sophos_access_token)
+
+    # Lookup up the unique ID assigned to the business entity for Sophos Central API
+    whoami_id, whoami_type, whoami_data = get_whoami_data(headers, whoami_url)
+
+    # Obtain correct whoami uri/header based on the whoami type
+    header_type, tenant_url = validate_whoami_type(whoami_type, whoami_data, partner_url, organization_url)
+
+    # Construct tenant headers
+    tenant_headers = api_tenant.gen_tenant_headers(headers, whoami_id, whoami_type, header_type)
+
+    # Check and gather tenant information
+    if whoami_type == "tenant":
+        tenant_info = api_tenant.type_tenant(tenant_headers, whoami_id, tenant_url, sophos_access_token)
+    else:
+        tenant_info = api_tenant.get_tenant_info(headers, tenant_url, sophos_access_token)
+
+    return tenant_info
 
 
 def get_bearer_tok(client_id, client_secret, auth_url):
     # Call the auth section by passing the client_id and client_secret information
-    logging.info("Beginning authorization process")
+    logging.info("Beginning authorisation process")
     # construct url for obtaining access_token
     logging.info("Obtaining Sophos Central API Authorisation URI")
     # set the initial header information

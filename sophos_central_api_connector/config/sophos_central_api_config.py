@@ -9,6 +9,7 @@ alerts_uri = '/common/v1/alerts'
 endpoints_uri = '/endpoint/v1/endpoints'
 directory_uri = '/common/v1/directory'
 settings_uri = '/endpoint/v1/settings'
+livediscover_uri = '/live-discover/v1/queries'
 
 
 # Default Value
@@ -23,6 +24,7 @@ uuid_regex = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA
 sophos_conf_path = PurePath("/config/sophos_config.ini")
 splunk_conf_path = PurePath("/config/splunk_config.ini")
 intelix_conf_path = PurePath("/config/intelix_config.ini")
+misp_conf_path = PurePath("/config/misp_config.ini")
 output_inv_path = PurePath("/output/get_inventory")
 output_al_path = PurePath("/output/get_alerts")
 output_ls_path = PurePath("/output/get_local_sites")
@@ -33,3 +35,4 @@ poll_alerts_path = PurePath("/polling/alert_ids.json")
 poll_temp_path = PurePath("/polling/temp_alert_ids.json")
 poll_path = PurePath("/polling")
 logging_path = PurePath("/logs/failed_events.json")
+temp_path = PurePath("/tmp")
