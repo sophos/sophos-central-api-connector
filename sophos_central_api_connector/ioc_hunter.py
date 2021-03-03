@@ -49,6 +49,12 @@ def main(params):
         misp_type = params.misp_type
         misp_val = params.misp_val
 
+        if not misp_type or not misp_val:
+            logging.error("You must specify a MISP type and value")
+            exit(1)
+        else:
+            pass
+
         if misp_tok:
             try:
                 # Pull the credentials from AWS Secret Manager and pass to initialise Sophos Central API
@@ -193,9 +199,9 @@ if __name__ == "__main__":
                                                           "documentation. \nEncapsulate your filter in single quotes, "
                                                           "''")
     parser.add_argument('-v', '--variables', nargs='+', help="Add the following values for the variables in order:\n"
-                                                             "- Number of Hours of activity to search\n"
-                                                             "- IOC JSON\n"
-                                                             "- Start Search From")
+                                                             "[0] Number of Hours of activity to search\n"
+                                                             "[1] IOC JSON\n"
+                                                             "[2] Start Search From")
     parser.add_argument('-m', '--misp', type=set_bool_val, nargs='?', const=True, default=False, help="Enable MISP "
                                                                                                       "attributes. "
                                                                                                       "Boolean")
