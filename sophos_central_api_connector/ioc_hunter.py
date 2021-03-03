@@ -3,7 +3,6 @@ import getpass
 import json
 import argparse as ap
 import re
-import sophos_central_api_live_discover as sld
 import configparser as cp
 from sys import getsizeof
 from sophos_central_api_connector import sophos_central_api_auth as api_auth
@@ -11,6 +10,7 @@ from sophos_central_api_connector import sophos_central_api_awssecrets as awssec
 from sophos_central_api_connector import sophos_central_api_connector_utils as api_utils
 from sophos_central_api_connector.config import sophos_central_api_config as api_conf
 from sophos_central_api_connector import sophos_central_api_output as api_output
+from sophos_central_api_connector import sophos_central_api_live_discover as sld
 
 # Global variables
 api = "live-discover"
