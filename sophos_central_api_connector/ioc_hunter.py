@@ -81,7 +81,7 @@ def main(params):
     # format the filter variable to remove escape characters and pass as json
     if search_filter:
         try:
-            search_filter = json.loads(re.sub('[?]', '', search_filter))
+            search_filter = json.loads(re.sub('[\\?]', '', search_filter))
         except ValueError as err:
             logging.error("JSON malformed: {0}".format(search_filter))
             raise err
