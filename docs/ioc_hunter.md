@@ -4,6 +4,9 @@ The IOC Hunter script is to provide the ability to search your estate for IOCs b
 
 Currently this is only for saved searches in Live Discover. Follow the instructions [here](https://docs.sophos.com/central/Customer/help/en-us/central/Customer/learningContents/LiveDiscover.html#id_e5z_5v1_2lb) to create a custom query from the ioc_hunter.sqlite file
 
+### Authentication
+We are moving away from you having the ability to place your credentials in the configuration in plain text. If nothing is set you will be prompted during the running of the script
+
 ### Usage
 To obtain help information on how to call the various commands run the following:
 ```python
