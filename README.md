@@ -86,6 +86,19 @@ ___
 pip install --user sophos_central_api_connector
 ```
 ___
+
+## Authentication
+There are two options for authentication, the setting used here will be used for all areas of authentication. As mentioned under the configuration section we recommend using the AWS Secrets Manager for storing these credentials. Only use the static credentials for testing purposes.
+
+### Static Credentials
+To specify using the static credentials which are in the \*config.ini files you can use the following:
+`python3 sophos_central_main.py --auth static`
+
+### AWS Secrets Manager
+To specify using the AWS settings which are in the \*config.ini files to retrieve the secrets and token you can use the following:
+`python3 sophos_central_main.py --auth aws`
+___
+
 ## Basic Examples
 
 ### Help
@@ -120,6 +133,28 @@ To get a list of local site data:
 python sophos_central_main.py --auth <auth_option> --get local-sites --output <output_option>
 ```
    ___
+
+## Output Options
+There are four output options available for the inventory, simply add one of the following after `--output`:
+- **stdout:** Print the information to the console.
+- **json:** Save the output of the request to a json file
+- **splunk:** This will send the data to Splunk with no changes made. This will apply the settings made in the transform files.
+- **splunk_trans:** Using this output will apply the information set in the splunk_config.ini for the host, source and sourcetype. This will overrun the settings in the transform files in Splunk but not the Index that the data should be sent to.
+
+___
+
+## Troubleshooting
+All logging is done via the python `logging` library. Valid logging levels are:
+
+- INFO
+- DEBUG
+- CRITICAL
+- WARNING
+- ERROR
+
+For basic feedback set the logging level to `INFO`
+___
+
 ## Structure
 Below is the structure after installing through pip:
 ```
@@ -132,6 +167,7 @@ sophos_central_api_connector
 |   setup.py
 |___docs
 |       alerts.md
+|       intelix.md
 |       intelix_configuration.md
 |       inventory.md
 |       ioc_hunter.md
@@ -175,6 +211,7 @@ sophos_central_api_connector
 |   setup.py
 |___docs
 |       alerts.md
+|       intelix.md
 |       intelix_configuration.md
 |       inventory.md
 |       ioc_hunter.md

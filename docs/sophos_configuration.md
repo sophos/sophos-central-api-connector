@@ -1,4 +1,4 @@
-## Configuration
+## Sophos Configuration
 The following configuration files can be changed to reflect your environment and also your needs.
 
 ### sophos_central_api_config.py
