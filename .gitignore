@@ -64,7 +64,7 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+sophos_central_api_connector/docs/_build/
 
 # PyBuilder
 target/
