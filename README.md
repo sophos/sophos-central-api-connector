@@ -1,14 +1,30 @@
 # Sophos Central API Connector
 Python library to utilise many of the features in Sophos Central API across multiple or single tenants
 
-Documentation on the Sophos Central API can be found [here](https://developer.sophos.com/) 
+* [Documentation: Sophos Central API](https://developer.sophos.com/)
+* [Documentation: Sophos Central API Connector](https://github.com/sophos-cybersecurity/sophos_central_api_connector/tree/master/docs)
 
 ![Python](https://img.shields.io/badge/python-v3.6+-blue.svg)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Generic badge](https://img.shields.io/badge/version-0.1.4-green.svg)](https://shields.io/)
-   ***
+   ___
 
-Table of contents will be going here
+## Table of contents: 
+
+- [Sophos Central API Connector](#sophos-central-api-connector)
+  * [Features](#features)
+  * [Quick start](#quick-start)
+      - [**Important!**](#--important---)
+  * [Prerequisites](#prerequisites)
+  * [Install](#install)
+  * [Basic Examples](#basic-examples)
+    + [Help](#help)
+    + [Tenants List](#tenants-list)
+    + [Inventory](#inventory)
+    + [Alerts/Event Information](#alerts-event-information)
+    + [Local Site](#local-site)
+  * [Structure](#structure)
+  
    ___
 
 ## Features
@@ -18,15 +34,16 @@ All features can be run against single or multiple tenants
 * Gather alerts
    * Alert polling
    * Output to stdout, json, Splunk
-* Clean up Global exclusions
-   * Compare exclusions to SophosLabs Intelix
-   * Generate report of what was run
+* Local Sites
+   * Clean up Global exclusions
+      * Compare exclusions to SophosLabs Intelix
+   * Generate report
 * IOC Hunting - Utilising Live Discover
    * MISP Attribute hunting (eventId, tags)
    * RAW JSON input
    * Saved search
-
-   ___
+    
+___
 
 ## Quick start
 Want to test as quickly as possible? Follow the below quick start steps to begin looking at your Sophos Central data!
@@ -60,21 +77,19 @@ Want to test as quickly as possible? Follow the below quick start steps to begin
    > Please reference the authentication section under advanced usage to use the correct parameter
 ___
 
-## Getting Started
-The below instructions will take you through obtaining a copy of the project and details on how to obtain an Sophos Central API key.
-
-### Prerequisites
+## Prerequisites
 In order to use the package you will require a valid API key from your Sophos Central tenant. To obtain a valid API key please reference the documentation [here](https://developer.sophos.com/intro)
+___
 
-### Install
+## Install
 ```python
 pip install --user sophos_central_api_connector
 ```
-
+___
 ## Basic Examples
 
 ### Help
-To get information on the CLI commands when using the `sophos_central_main.py` simply run:
+To get information on the CLI commands when using the `sophos_central_main.py` run:
 
 ```python
 python sophos_central_main.py --help
@@ -87,6 +102,23 @@ To get a list of tenants:
 python sophos_central_main.py --auth <auth_option> --get tenants
 ```
 
+### Inventory
+To get inventory data:
+```python
+python sophos_central_main.py --auth <auth_option> --get inventory --output <output_option>
+```
+
+### Alerts/Event Information
+To get alert data:
+```python
+python sophos_central_main.py --auth <auth_option> --get alerts --days <integer: 1-90> --output <output_option>
+```
+
+### Local Site
+To get a list of local site data:
+```python
+python sophos_central_main.py --auth <auth_option> --get local-sites --output <output_option>
+```
    ___
 ## Structure
 Below is the structure after installing through pip:
@@ -98,6 +130,18 @@ sophos_central_api_connector
 |   README.md
 |   requirements.txt
 |   setup.py
+|___docs
+|       alerts.md
+|       intelix_configuration.md
+|       inventory.md
+|       ioc_hunter.md
+|       local_sites.md
+|       misp_configuration.md
+|       sophos_configuration.md
+|       splunk_configuration.md
+|___xdr_queries
+|       |___Live Discover
+|               ioc_hunter.sqlite
 |___sophos_central_api_connector
 |       ioc_hunter.py
 |       sophos_central_api_live_discover.py
@@ -129,6 +173,18 @@ sophos_central_api_connector
 |   README.md
 |   requirements.txt
 |   setup.py
+|___docs
+|       alerts.md
+|       intelix_configuration.md
+|       inventory.md
+|       ioc_hunter.md
+|       local_sites.md
+|       misp_configuration.md
+|       sophos_configuration.md
+|       splunk_configuration.md
+|___xdr_queries
+|       |___Live Discover
+|               ioc_hunter.sqlite
 |___sophos_central_api_connector
 |       ioc_hunter.py
 |       sophos_central_api_live_discover.py
