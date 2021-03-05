@@ -16,7 +16,7 @@ ioc_hunter.py --help
 Using the IOC Hunter you can search for IOCs by either:
 * Passing RAW JSON in arguments
 * MISP attributes (eventIds or tags)
-    * Follow the MISP Configuration documents to utilise this feature [here](https://github.com/sophos-cybersecurity/sophos_central_api_connector/blob/master/docs/misp_configuration.md)
+    * Follow the MISP Configuration documents to utilise this feature [here](https://github.com/sophos-cybersecurity/sophos_central_api_connector/blob/master/sophos_central_api_connector/docs/misp_configuration.md)
 
 By passing MISP attributes the JSON is automatically generated to work with the saved query in Live Discover.
 

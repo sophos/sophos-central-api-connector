@@ -2,7 +2,7 @@
 Python library to utilise many of the features in Sophos Central API across multiple or single tenants
 
 * [Documentation: Sophos Central API](https://developer.sophos.com/)
-* [Documentation: Sophos Central API Connector](https://github.com/sophos-cybersecurity/sophos_central_api_connector/tree/master/docs)
+* [Documentation: Sophos Central API Connector](https://github.com/sophos-cybersecurity/sophos_central_api_connector/tree/master/sophos_central_api_connector/docs)
 
 ![Python](https://img.shields.io/badge/python-v3.6+-blue.svg)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
