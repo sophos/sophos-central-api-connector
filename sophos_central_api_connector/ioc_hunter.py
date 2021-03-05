@@ -192,10 +192,12 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--tenant', nargs='?', help="Allows to specify one tenant\nIf this argument is not "
                                                           "specified all tenants will apply.")
     parser.add_argument('-st', '--search_type', choices=["saved", "adhoc", "list"], required=True,
-                        help="Must specify if the search to be run is a saved or adhoc search")
+                        help="Must specify if the search to be run is a saved or adhoc search. Alternatively you "
+                             "can list the saved queries available in the tenants (name, description, variables "
+                             "and tenant)")
     parser.add_argument('-si', '--search_input', nargs='?', help="Enter input based on selected search type")
-    parser.add_argument('-f', '--filter', nargs='?', help="Not setting a search filter will default to a pre-compiled "
-                                                          "filter. You can set a custom JSON filter following the "
+    parser.add_argument('-f', '--filter', nargs='?', help="Not setting a search filter will default to the pre-compiled"
+                                                          " filter. You can set a custom JSON filter following the "
                                                           "documentation. \nEncapsulate your filter in single quotes, "
                                                           "''")
     parser.add_argument('-v', '--variables', nargs='+', help="Add the following values for the variables in order:\n"

@@ -43,11 +43,12 @@ def live_discover(tenant_data, input_type, input_value, search_filter, variables
         logging.info("Getting saved search details")
         query_det = get_queries(tenant_data, True, input_value)
         if not variables:
-            for s_id, s_val in query_det.items():
-                if s_val['template_variables']:
-                    variables = s_val['template_variables']
-                else:
-                    pass
+            for s_id, val in query_det.items():
+                for t_id, s_val in val.items():
+                    if s_val['template_variables']:
+                        variables = s_val['template_variables']
+                    else:
+                        pass
         else:
             pass
 
@@ -74,14 +75,23 @@ def get_queries(tenant_url_data, query_find, query_det):
 
         for num, item in query_dict.items():
             if item.get('name') == query_info:
-                logging.info("Found saved query: '{0}' for tenant: {1}".format(query_det, tenant))
                 q_id = item['id']
+                logging.info("Found saved query: '{0}' for tenant: {1}".format(query_det, tenant))
+                logging.info("Search ID: {0}".format(q_id))
                 if item['variables']:
-                    fdict[q_id] = {"name": item['name'], "description": item['description'], "tenant_id": tenant,
-                                   "template_variables": item['variables']}
+                    if fdict.get(tenant):
+                        fdict.update({tenant: {q_id: {"name": item['name'], "description": item['description'],
+                                                      "template_variables": item['variables']}}})
+                    else:
+                        fdict[tenant] = {q_id: {"name": item['name'], "description": item['description'],
+                                                "template_variables": item['variables']}}
                 else:
-                    fdict[q_id] = {"name": item['name'], "description": item['description'], "tenant_id": tenant,
-                                   "template_variables": None}
+                    if fdict.get(tenant):
+                        fdict[tenant] = {q_id: {"name": item['name'], "description": item['description'],
+                                                "template_variables": None}}
+                    else:
+                        fdict.update({tenant: {q_id: {"name": item['name'], "description": item['description'],
+                                                      "template_variables": None}}})
                 logging.debug("Query details: {0}".format(fdict))
             else:
                 pass
@@ -100,10 +110,10 @@ def get_queries(tenant_url_data, query_find, query_det):
 
     # Gather the queries for the tenants
     new_dict = dict()
+    logging.info("Attempting to get Live Discover queries")
 
     for ten_id, ten_item in tenant_url_data.items():
         # Pass the ten_url_data and gather the queries
-        logging.info("Attempting to get Live Discover queries")
         tenant_id = ten_id
         # get data information for the tenant in the loop
         json_data = get_api.get_data(tenant_url_data, page_size, tenant_id, api)
@@ -121,54 +131,53 @@ def build_json_payload(input_type, input_value, query_data, filters, variables):
     # Open find query json if available
     rebuild_dict = dict()
 
-    for s_id, s_det in query_data.items():
-        q_name = s_det['name']
-        q_desc = s_det['description']
-        q_ten = s_det['tenant_id']
-        if variables:
-            try:
-                if input_type == "saved":
-                    con_json = {"matchEndpoints": {"filters": [filters]}, "savedQuery": {"queryId": s_id},
-                                "variables": variables}
-                elif input_type == "adhoc":
-                    con_json = {"matchEndpoints": {"filters": [filters]}, "adHocQuery": {"template": input_value},
-                                "variables": variables}
+    for k, v in query_data.items():
+        for s_id, s_det in v.items():
+            q_name = s_det['name']
+            q_desc = s_det['description']
+            if variables:
+                try:
+                    if input_type == "saved":
+                        con_json = {"matchEndpoints": {"filters": [filters]}, "savedQuery": {"queryId": s_id},
+                                    "variables": variables}
+                    elif input_type == "adhoc":
+                        con_json = {"matchEndpoints": {"filters": [filters]}, "adHocQuery": {"template": input_value},
+                                    "variables": variables}
+                    else:
+                        logging.error("Input type is not valid, please review variables passed")
+                        exit(1)
+
+                    json.dumps(con_json)
+                except ValueError as err:
+                    logging.error("JSON has failed validation test")
+                    logging.error(con_json)
+                    raise err
                 else:
-                    logging.error("Input type is not valid, please review variables passed")
-                    exit(1)
+                    logging.info("JSON has been validated successfully")
+                    logging.debug("JSON Passed: {0}".format(con_json))
+                    logging.info("Adding payload to query dict")
+                    rebuild_dict[k] = {s_id: {"name": q_name, "description": q_desc, "payload": con_json}}
+            elif not variables:
+                try:
+                    if input_type == "saved":
+                        con_json = {"matchEndpoints": {"filters": [filters]}, "savedQuery": {"queryId": s_id}}
+                    elif input_type == "adhoc":
+                        con_json = {"matchEndpoints": {"filters": [filters]}, "adHocQuery": {"template": input_value}}
+                    else:
+                        logging.error("Input type is not valid, please review variables passed")
+                        exit(1)
 
-                json.dumps(con_json)
-            except ValueError as err:
-                logging.error("JSON has failed validation test")
-                logging.error(con_json)
-                raise err
-            else:
-                logging.info("JSON has been validated successfully")
-                logging.debug("JSON Passed: {0}".format(con_json))
-                logging.info("Adding payload to query dict")
-                rebuild_dict[s_id] = {"name": q_name, "description": q_desc, "tenant_id": q_ten, "payload": con_json}
-
-        elif not variables:
-            try:
-                if input_type == "saved":
-                    con_json = {"matchEndpoints": {"filters": [filters]}, "savedQuery": {"queryId": s_id}}
-                elif input_type == "adhoc":
-                    con_json = {"matchEndpoints": {"filters": [filters]}, "adHocQuery": {"template": input_value}}
+                    json.dumps(con_json)
+                except ValueError as err:
+                    logging.error("JSON has failed validation test")
+                    logging.error(con_json)
+                    raise err
                 else:
-                    logging.error("Input type is not valid, please review variables passed")
-                    exit(1)
-
-                json.dumps(con_json)
-            except ValueError as err:
-                logging.error("JSON has failed validation test")
-                logging.error(con_json)
-                raise err
+                    logging.info("JSON has been validated successfully")
+                    logging.info("Adding payload to query dict")
+                    rebuild_dict[k] = {s_id: {"name": q_name, "description": q_desc, "payload": con_json}}
             else:
-                logging.info("JSON has been validated successfully")
-                logging.info("Adding payload to query dict")
-                rebuild_dict[s_id] = {"name": q_name, "description": q_desc, "tenant_id": q_ten, "payload": con_json}
-        else:
-            pass
+                pass
 
     return rebuild_dict
 
@@ -180,16 +189,25 @@ def post_ld_run(tenant_url_data, ld_dict):
             logging.info("Posting query")
             post_res = requests.post(url, headers=headers, json=q_payload)
             post_res.raise_for_status()
-        except requests.exceptions.HTTPError as http_err:
+        except requests.exceptions.HTTPError:  # as http_err:
             if post_res.status_code == 404:
-                logging.error("Item not found. Please verify your filter")
-                raise http_err
+                logging.error("Item not found. Please verify filter for this query id")
+                p_data = post_res.json()
+                logging.debug(json.dumps(p_data, indent=2))
+                return p_data
+                # raise http_err
             elif post_res.status_code == 400:
                 logging.error(post_res.text)
-                raise http_err
+                p_data = post_res.json()
+                logging.debug(json.dumps(p_data, indent=2))
+                return p_data
+                # raise http_err
             else:
                 logging.error("Error whilst posting search query, response: {0}".format(post_res.status_code))
-                raise http_err
+                p_data = post_res.json()
+                logging.debug(json.dumps(p_data, indent=2))
+                return p_data
+                # raise http_err
         else:
             logging.info("Post successful, making note of post id")
             p_data = post_res.json()
@@ -205,23 +223,33 @@ def post_ld_run(tenant_url_data, ld_dict):
         tenant = key
         p_headers = value['headers']
         p_headers['Content-Type'] = "application/json"
-        for q_key, q_val in ld_dict.items():
-            if tenant == q_val['tenant_id']:
-                ten_id = q_val['tenant_id']
-                logging.info("Search found for tenant: {0}, search name: {1}".format(ten_id, q_val['name']))
-                post_data = post_query(q_val, pq_url, p_headers)
-                if post_data:
-                    pq_id = post_data['id']
-                    pq_created = post_data['createdAt']
-                    pq_status = post_data['status']
-                    ep_count = post_data['endpointCounts']['total']
-                    pq_data = {q_key: {"name": q_val['name'], "description": q_val['description'], "tenant_id": ten_id,
-                                       "payload": q_val['payload'],
-                                       "post_data": {"pq_id": pq_id, "createdAt": pq_created, "status": pq_status,
-                                                     "ep_count": ep_count}}}
-                    pq_dict.update(pq_data)
-            else:
-                logging.info("No searches found in list for tenant: {0}".format(tenant))
+        for k, v in ld_dict.items():
+            for q_key, q_val in v.items():
+                if tenant == k:
+                    ten_id = k
+                    logging.info("Search found for tenant: {0}, search name: {1}".format(ten_id, q_val['name']))
+                    logging.info("Search ID: {0}".format(q_key))
+                    post_data = post_query(q_val, pq_url, p_headers)
+                    if post_data.get('id'):
+                        pq_id = post_data['id']
+                        pq_created = post_data['createdAt']
+                        pq_status = post_data['status']
+                        ep_count = post_data['endpointCounts']['total']
+                        pq_dict[k] = {q_key: {"name": q_val['name'], "description": q_val['description'],
+                                              "payload": q_val['payload'],
+                                              "post_data": {"pq_id": pq_id, "createdAt": pq_created,
+                                                            "status": pq_status,
+                                                            "ep_count": ep_count}}}
+                        # pq_dict.update(pq_data)
+                    elif post_data.get('error'):
+                        pq_err = post_data['error']
+                        pq_errmsg = post_data['message']
+                        r_id = post_data['requestId']
+                        pq_dict[k] = {q_key: {"name": q_val['name'], "description": q_val['description'],
+                                              "payload": q_val['payload'],
+                                              "post_data": {"r_id": r_id, "error": pq_err, "error_message": pq_errmsg}}}
+                else:
+                    logging.debug("No searches found in list for tenant: {0}".format(tenant))
 
     return pq_dict
 
@@ -230,19 +258,21 @@ def multi_query_run_checker(tenant_url_data, ld_dict):
     def loop_check():
         logging.debug("loop check")
         run_check = True
-        for sid, val in ld_dict.items():
-            new_status = val['post_data']['status']
-            t_remaining = val['post_data']['time_remaining']
-            if new_status != "finished":
-                if t_remaining == 0:
-                    logging.error("Max query duration reached. Query '{0}' will be terminated".format(sid))
-                    val['post_data']['terminated'] = True
-                    pass
-                else:
-                    val['post_data']['terminated'] = False
-                    logging.info("Time remaining before query, {0}: {1}, is automatically terminated: {2} "
-                                 "seconds".format(val['name'], sid, t_remaining))
-                    run_check = False
+        for t_key, pval in ld_dict.items():
+            for sid, val in pval.items():
+                if val.get('post_data').get('pq_id'):
+                    new_status = val.get('post_data').get('status')
+                    t_remaining = val.get('post_data').get('time_remaining')
+                    if new_status != "finished":
+                        if t_remaining == 0:
+                            logging.error("Max query duration reached. Query '{0}' will be terminated".format(sid))
+                            val['post_data']['terminated'] = True
+                            pass
+                        else:
+                            val['post_data']['terminated'] = False
+                            logging.info("Time remaining before query, {0}: {1}, is automatically terminated: {2} "
+                                         "seconds".format(val['name'], sid, t_remaining))
+                            run_check = False
 
         return run_check
 
@@ -251,17 +281,20 @@ def multi_query_run_checker(tenant_url_data, ld_dict):
     logging.info("Checking status of run(s). Check every 10s until all have finished")
     while not q_fin:
         # For loop to go through dict and check all run ids
-        for s_id, s_vals in ld_dict.items():
-            run_id = s_vals['post_data']['pq_id']
-            tenant = s_vals['tenant_id']
-            run_status = get_ld_run_status(tenant_url_data, tenant, run_id)
-            # todo: need to work out what to do when it fails
-            status = run_status['status']
-            logging.debug("run status: {0}".format(status))
-            s_vals['post_data']['status'] = status
-            s_vals['post_data']['time_remaining'] = run_status['timeRemainingInSeconds']
-            s_vals['post_data']['finishedAt'] = run_status.get('finishedAt', None)
-            s_vals['post_data']['statuses'] = run_status['endpointCounts']['statuses']
+        for ten_key, vals in ld_dict.items():
+            for s_id, s_vals in vals.items():
+                if s_vals.get('post_data').get('pq_id'):
+                    run_id = s_vals['post_data']['pq_id']
+                    run_status = get_ld_run_status(tenant_url_data, ten_key, run_id)
+                    if run_status:
+                        status = run_status.get('status')
+                        logging.debug("run status: {0}".format(status))
+                        s_vals['post_data']['status'] = status
+                        s_vals['post_data']['time_remaining'] = run_status['timeRemainingInSeconds']
+                        s_vals['post_data']['finishedAt'] = run_status.get('finishedAt', None)
+                        s_vals['post_data']['statuses'] = run_status['endpointCounts']['statuses']
+                    else:
+                        logging.info("No run status information for search id: {0}".format(run_id))
 
         q_fin = loop_check()
         if not q_fin:
@@ -282,6 +315,8 @@ def get_ld_run_status(tenant_url_data, tenant, run_id):
             headers['Content-Type'] = "application/json"
             logging.info("Check run id: {0}".format(run_id))
             run_status = get_api.get_page(url, headers)
+        else:
+            pass
 
     return run_status
 
@@ -305,12 +340,14 @@ def get_ld_endpoints(tenant_url_data, run_data):
 
     ld_ep_dict = dict()
 
-    for r_id, r_value in run_data.items():
-        run_id = r_value['post_data']['pq_id']
-        tenant = r_value['tenant_id']
-        url_ext = "/runs/{0}/endpoints".format(run_id)
-        pg_info = get_runid_eps()
-        ld_ep_dict[run_id] = pg_info
+    for t_key, v in run_data.items():
+        for s_id, r_value in v.items():
+            if r_value.get('post_data').get('pq_id'):
+                run_id = r_value['post_data']['pq_id']
+                tenant = t_key
+                url_ext = "/runs/{0}/endpoints".format(run_id)
+                pg_info = get_runid_eps()
+                ld_ep_dict[run_id] = pg_info
 
     return ld_ep_dict
 
@@ -334,25 +371,41 @@ def get_run_results(tenant_url_data, run_data, size):
     q_res_dict = dict()
 
     # For loop to go through the dict and check all run ids
-    for s_id, s_vals in run_data.items():
-        run_id = s_vals['post_data']['pq_id']
-        url_ext = "/runs/{0}/results".format(run_id)
-        success_withdata = s_vals['post_data']['statuses']['finished']['succeeded']['withData']
-        terminated = s_vals['post_data']['terminated']
-        logging.info("Checking whether any endpoints completed with data")
-        if success_withdata > 0:
-            logging.info("Some endpoints have returned data")
-            logging.info("Waiting 2 minutes to start gathering results")
-            tenant = s_vals['tenant_id']
-            sleep(120)
-            res_data = get_results()
-            q_res_dict[s_id] = res_data
-        elif terminated:
-            logging.info("This query was terminated, skipping")
-            pass
-        else:
-            logging.info("No results have been returned for this run id: '{0}'".format(s_vals['post_data']['pq_id']))
-            q_res_dict[s_id] = {"tenant": s_vals['tenant_id'], "results": "No EPs completed with data"}
+    for ten_key, val in run_data.items():
+        for s_id, s_vals in val.items():
+            if s_vals.get('post_data').get('pq_id'):
+                run_id = s_vals['post_data']['pq_id']
+                url_ext = "/runs/{0}/results".format(run_id)
+                success_withdata = s_vals['post_data']['statuses']['finished']['succeeded']['withData']
+                terminated = s_vals.get('post_data').get('terminated')
+                logging.info("Checking whether any endpoints completed with data")
+                if success_withdata > 0:
+                    logging.info("Some endpoints have returned data")
+                    logging.info("Waiting 2 minutes to start gathering results")
+                    tenant = ten_key
+                    sleep(120)
+                    res_data = get_results()
+                    if q_res_dict.get(run_id):
+                        logging.info("Results gathered")
+                        q_res_dict.update({run_id: {res_data}})
+                    else:
+                        logging.info("Results gathered")
+                        q_res_dict[run_id] = res_data
+                elif success_withdata == 0 and terminated:
+                    logging.info("This query was terminated, with no results. Skipping")
+                else:
+                    logging.info("No results have been returned for this run id: '{0}'".format(run_id))
+                    if q_res_dict.get(run_id):
+                        q_res_dict.update({run_id: {"tenant": ten_key, "results": "No EPs completed with data"}})
+                    else:
+                        q_res_dict[run_id] = {"tenant": ten_key, "results": "No EPs completed with data"}
+            else:
+                logging.info("No results have been returned")
+                if q_res_dict.get(run_id):
+                    r_id = s_vals['post_data']['r_id']
+                    q_res_dict.update({r_id: {"tenant": ten_key, "results": "No EPs completed with data"}})
+                else:
+                    q_res_dict[r_id] = {"tenant": ten_key, "results": "No EPs completed with data"}
 
     return q_res_dict
 
