@@ -177,7 +177,7 @@ sophos_central_api_connector
 |       splunk_configuration.md
 |___xdr_queries
 |       |___Live Discover
-|               ioc_hunter.sqlite
+|               ioc_hunter.sql
 |___sophos_central_api_connector
 |       ioc_hunter.py
 |       sophos_central_api_live_discover.py
@@ -209,20 +209,20 @@ sophos_central_api_connector
 |   README.md
 |   requirements.txt
 |   setup.py
-|___docs
-|       alerts.md
-|       intelix.md
-|       intelix_configuration.md
-|       inventory.md
-|       ioc_hunter.md
-|       local_sites.md
-|       misp_configuration.md
-|       sophos_configuration.md
-|       splunk_configuration.md
-|___xdr_queries
-|       |___Live Discover
-|               ioc_hunter.sqlite
 |___sophos_central_api_connector
+|   |___docs
+|   |       alerts.md
+|   |       intelix.md
+|   |       intelix_configuration.md
+|   |       inventory.md
+|   |       ioc_hunter.md
+|   |       local_sites.md
+|   |       misp_configuration.md
+|   |       sophos_configuration.md
+|   |       splunk_configuration.md
+|   |___xdr_queries
+|   |       |___Live Discover
+|                  ioc_hunter.sql
 |       ioc_hunter.py
 |       sophos_central_api_live_discover.py
 |       sophos_central_api_auth.py
