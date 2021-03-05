@@ -176,7 +176,7 @@ sophos_central_api_connector
 |       sophos_configuration.md
 |       splunk_configuration.md
 |___xdr_queries
-|       |___Live Discover
+|       |___live_discover
 |               ioc_hunter.sql
 |___sophos_central_api_connector
 |       ioc_hunter.py
@@ -221,7 +221,7 @@ sophos_central_api_connector
 |   |       sophos_configuration.md
 |   |       splunk_configuration.md
 |   |___xdr_queries
-|   |       |___Live Discover
+|   |       |___live_discover
 |                  ioc_hunter.sql
 |       ioc_hunter.py
 |       sophos_central_api_live_discover.py
