@@ -2,7 +2,7 @@
 
 The IOC Hunter script is to provide the ability to search your estate for IOCs by providing variable details and search filter.
 
-Currently this is only for saved searches in Live Discover. Follow the instructions [here](https://docs.sophos.com/central/Customer/help/en-us/central/Customer/learningContents/LiveDiscover.html#id_e5z_5v1_2lb) to create a custom query from the ioc_hunter.sqlite file
+Currently this is only for saved searches in Live Discover. Follow the instructions [here](https://docs.sophos.com/central/Customer/help/en-us/central/Customer/learningContents/LiveDiscover.html#id_e5z_5v1_2lb) to create a custom query from the ioc_hunter.sql file
 
 ### Authentication
 We are moving away from you having the ability to place your credentials in the configuration in plain text. If nothing is set you will be prompted during the running of the script
@@ -16,7 +16,7 @@ ioc_hunter.py --help
 Using the IOC Hunter you can search for IOCs by either:
 * Passing RAW JSON in arguments
 * MISP attributes (eventIds or tags)
-    * Follow the MISP Configuration documents to utilise this feature [here](https://github.com/sophos-cybersecurity/sophos_central_api_connector/blob/master/sophos_central_api_connector/docs/misp_configuration.md)
+    * Follow the MISP Configuration documents to utilise this feature [here](https://github.com/sophos-cybersecurity/sophos-central-api-connector/blob/master/sophos_central_api_connector/docs/misp_configuration.md)
 
 By passing MISP attributes the JSON is automatically generated to work with the saved query in Live Discover.
 
