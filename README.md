@@ -79,7 +79,7 @@ Want to test as quickly as possible? Follow the below quick start steps to begin
 
    > #### **Important!**
    > We would recommend that the static entry is only used for testing purposes and the token is stored and accessed securely.
-   > Please reference the authentication section under advanced usage to use the correct parameter
+   > Please reference the authentication section
 ___
 
 ## Prerequisites
