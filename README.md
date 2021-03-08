@@ -17,12 +17,17 @@ Python library to utilise many of the features in Sophos Central API across mult
       - [**Important!**](#--important---)
   * [Prerequisites](#prerequisites)
   * [Install](#install)
+  * [Authentication](#authentication)
+    + [Static Credentials](#static-credentials)
+    + [AWS Secrets Manager](#aws-secrets-manager)
   * [Basic Examples](#basic-examples)
     + [Help](#help)
     + [Tenants List](#tenants-list)
     + [Inventory](#inventory)
     + [Alerts/Event Information](#alerts-event-information)
     + [Local Site](#local-site)
+  * [Output Options](#output-options)
+  * [Troubleshooting](#troubleshooting)
   * [Structure](#structure)
   
    ___
