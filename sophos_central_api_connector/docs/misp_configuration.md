@@ -8,7 +8,6 @@ Details on obtaining the correct URL and API Key please follow the documentation
 
 We are moving away from you having the ability to place your credentials in the configuration in plain text.
 
-You can store your credentials in AWS Secrets and access them by providing:
 You can access your AWS secrets by configuring your details as below:
 - **secret_name:** \<secret_name\>
 - **region_name:** \<aws_region\>
