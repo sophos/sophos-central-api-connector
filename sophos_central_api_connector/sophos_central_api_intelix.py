@@ -29,6 +29,7 @@ def local_site_check(intelix_client_id, intelix_client_secret, request_data, ten
         except:
             ip_val = False
 
+        logging.debug("ip_value: {0}, url: {1}".format(ip_val, url_value))
         if ip_val:
             # send to ip_lookup
             intx.ip_lookup(url_value)
@@ -42,7 +43,8 @@ def local_site_check(intelix_client_id, intelix_client_secret, request_data, ten
             intx.url_lookup(url_value)
             intx_data = {"lookup_type": "url", "requestId": intx.requestId,
                          "productivityCategory": intx.productivityCategory,
-                         "securityCategory": intx.securityCategory, "riskLevel": intx.riskLevel}
+                         "securityCategory": intx.securityCategory, "riskLevel": intx.riskLevel,
+                         "prod_cat": intx.productivityCategory, "sec_cat": intx.securityCategory}
             intelix_dict[url_value] = intx_data
         else:
             pass
@@ -222,7 +224,7 @@ def test(intelix_client_id, intelix_client_secret, test_url):
 
     # check if the url_value is an ip
     try:
-        ip_address(url_value)
+        ip_address(test_url)
         ip_val = True
     except:
         ip_val = False
@@ -236,6 +238,8 @@ def test(intelix_client_id, intelix_client_secret, test_url):
         intx.url_lookup(test_url)
         intx_data = {"requestId": intx.requestId, "productivityCategory": intx.productivityCategory,
                      "securityCategory": intx.securityCategory, "riskLevel": intx.riskLevel}
+
+    logging.info(intx_data)
 
 
 def prepare_del_dict(intx_clean_level, combined_results):

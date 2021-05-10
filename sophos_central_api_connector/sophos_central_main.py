@@ -512,8 +512,9 @@ def main(args):
                           " what the effect of command would be to prevent items being deleted from Central")
             exit(1)
     elif intelix == "test":
-        intelix_client_id, intelix_client_secret = get_intelix_auth(intelix_final_path)
+        intelix_client_id, intelix_client_secret = get_intelix_auth(sophos_auth, intelix_final_path)
         url = "sophos.com"
+        logging.info("Testing the following URL: {0}".format(url))
         intx.test(intelix_client_id, intelix_client_secret, url)
     else:
         # invalid get parameter has been passed
