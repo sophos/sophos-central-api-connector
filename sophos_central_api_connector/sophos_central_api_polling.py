@@ -29,7 +29,9 @@ def polling_alerts(alerts_exists, temp_exists, reset_flag, day_flag, days):
             # If the polling config is set and the reset flag is passed. Prepare for the next run
             logging.info("Deleting alert_ids log")
             # delete the old alert_ids.json. This will remove the last events successfully sent
-            remove(poll_alerts_path)
+            poll_alerts = api_conf.poll_alerts_path
+            final_poll_alerts_path = get_file_location(poll_alerts)
+            remove(final_poll_alerts_path)
         if temp_exists and reset_flag:
             # If the temp file exists then it will be deleted if the reset flag is set
             logging.info("Deleting temp_alert_ids log")
@@ -249,12 +251,12 @@ def process_poll_events(events):
     poll_temp_path = get_file_location(poll_tf_path)
     logging.info("Begin processing events...")
     with open(poll_temp_path, 'r') as check_alerts:
-        temp_alert_ids = json.load(check_alerts, encoding='utf-8')
+        temp_alert_ids = json.load(check_alerts)
         new_spl_events = {}
 
     # check for matching ids and only add missing ones
     for (new_event_id, new_event_value) in events.items():
-        if new_event_value['event']['id'] in temp_alert_ids.keys():
+        if new_event_value.get('event', {}).get('id') or new_event_value.get('id', None) in temp_alert_ids.keys():
             # if the id matches the key then skip
             pass
         else:
@@ -314,7 +316,7 @@ def finalise_polling(poll, to_str):
         # gather the old sent alerts from the temp file if any
         if temp_exists:
             with open(poll_temp_path, 'r') as check_alerts:
-                temp_alert_ids = json.load(check_alerts, encoding='utf-8')
+                temp_alert_ids = json.load(check_alerts)
             return temp_alert_ids
         else:
             temp_alert_ids = None
@@ -324,7 +326,7 @@ def finalise_polling(poll, to_str):
         # gather the new events that have been sent if any
         if main_exists:
             with open(poll_alerts_path, 'r') as new_alerts:
-                alerts = json.load(new_alerts, encoding='utf-8')
+                alerts = json.load(new_alerts)
             return alerts
         else:
             alerts = None

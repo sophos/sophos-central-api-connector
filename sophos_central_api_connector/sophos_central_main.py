@@ -119,7 +119,7 @@ def get_inventory(tenant_info, output, page_size, splunk_creds=None, tenant=None
     tenant_url_data = api_utils.generate_tenant_urls(tenant_info, page_size, api, from_str=None, to_str=None)
 
     for key, value in tenant_url_data.items():
-        # If a tenant has been passed in the CLI arguements it checks whether it exists in the tenants obtained
+        # If a tenant has been passed in the CLI arguments it checks whether it exists in the tenants obtained
         if tenant == key:
             # The tenant passed has been found
             tenant_url_data = {key: value}
@@ -164,10 +164,19 @@ def get_alerts(tenant_info, output, poll, days, reset_flag, page_size, splunk_cr
     # Validate page size set
     page_size = api_utils.validate_page_size(page_size, api)
 
+    poll_path = api_conf.poll_conf_path
+    final_poll_conf_path = get_file_location(poll_path)
+
+    poll_alerts = api_conf.poll_alerts_path
+    final_poll_alerts_path = get_file_location(poll_alerts)
+
+    poll_temp = api_conf.poll_temp_path
+    final_poll_temp_path = get_file_location(poll_temp)
+
     # Check if the polling log is available
-    alerts_exists = path.isfile('sophos_central_api_connector/polling/poll_config.json')
-    alertids_exists = path.isfile('sophos_central_api_connector/polling/alert_ids.json')
-    temp_exists = path.isfile('sophos_central_api_connector/polling/temp_alert_ids.json')
+    alerts_exists = path.isfile(final_poll_conf_path)
+    alertids_exists = path.isfile(final_poll_alerts_path)
+    temp_exists = path.isfile(final_poll_temp_path)
 
     # If the number of days to check is set to None it will set the value to the default number of days: 1
     # It will also set the days_flag to False in order to validate args when checking polling in alerts
@@ -183,28 +192,22 @@ def get_alerts(tenant_info, output, poll, days, reset_flag, page_size, splunk_cr
         # sets the day flag
         day_flag = True
 
-    # Checks whether the polling arguement has been passed in order to calculate the to and from strings
+    # Checks whether the polling argument has been passed in order to calculate the to and from strings
     if poll:
-        # Polling arguement has been passed
-        if output == "json" or output == "stdout":
-            # Will error is output is json or stdout. Only accepts splunk or splunk_trans
-            logging.error("Polling not available for the output: {0}".format(output))
-            exit(1)
-        else:
-            logging.info("Polling has been set")
-            # splunk or splunk_trans has been passed. Pass the information to the polling alerts function
-            to_str, from_str, reset_flag = api_poll.polling_alerts(alerts_exists, temp_exists, reset_flag, day_flag,
-                                                                   days)
+        logging.info("Polling has been set")
+        # Pass the information to the polling alerts function
+        to_str, from_str, reset_flag = api_poll.polling_alerts(alerts_exists, temp_exists, reset_flag, day_flag,
+                                                               days)
     else:
         logging.info("No polling passed")
-        # No polling has been set so calulate from and to strings normally
+        # No polling has been set so calculate from and to strings normally
         to_str, from_str = api_utils.calculate_from_to(days, poll_date=None)
 
     # Generate urls for tenants
     tenant_url_data = api_utils.generate_tenant_urls(tenant_info, page_size, api, from_str, to_str)
 
     for key, value in tenant_url_data.items():
-        # If a tenant has been passed in the CLI arguements it checks whether it exists in the tenants obtained
+        # If a tenant has been passed in the CLI arguments it checks whether it exists in the tenants obtained
         if tenant == key:
             # The tenant passed has been found
             tenant_url_data = {key: value}
@@ -219,9 +222,23 @@ def get_alerts(tenant_info, output, poll, days, reset_flag, page_size, splunk_cr
         # Send the data to get data to gather the events
         json_data = get_api.get_data(tenant_url_data, page_size, tenant_id, api)
         if len(json_data) > 0:
-            # There are events to process. Send to check the output
-            events = api_output.process_output(output, json_data, tenant_url_data, tenant_id, api,
-                                               sourcetype_value)
+            if poll and output == "stdout" or output == "json":
+                alert_events = api_poll.prepare_poll(json_data, temp_exists, from_str)
+                # There are events to process. Send to check the output
+                events = api_output.process_output(output, alert_events, tenant_url_data, tenant_id, api,
+                                                   sourcetype_value)
+                for event_info in alert_events.values():
+                    # Extract the events id. tenant and raised at values
+                    event_id = event_info['id']
+                    event_tenant_id = event_info['tenant']['id']
+                    raised_at = event_info['raisedAt']
+                    event_data = {event_id: {"raised_at": raised_at, "tenant_id": event_tenant_id}}
+                    api_poll.gen_idalerts(event_data)
+            else:
+                # There are events to process. Send to check the output
+                events = api_output.process_output(output, json_data, tenant_url_data, tenant_id, api,
+                                                   sourcetype_value)
+
             if output == "splunk" or output == "splunk_trans":
                 # output parameter has been passed with splunk or splunk_trans
                 logging.info("Splunk output selected. Send events")
@@ -232,9 +249,9 @@ def get_alerts(tenant_info, output, poll, days, reset_flag, page_size, splunk_cr
                 logging.info("Completed processing for Tenant ID: {0}".format(tenant_id))
             else:
                 pass
-    else:
-        # No further data to process for the tenant
-        logging.info("Completed processing for Tenant ID: {0}".format(tenant_id))
+        else:
+            # No further data to process for the tenant
+            logging.info("Completed processing for Tenant ID: {0}".format(tenant_id))
 
     if poll:
         # If the polling parameter has been passed need to finalise the config and events
@@ -305,7 +322,7 @@ def get_splunk_creds(splunk_final_path):
         logging.info("Config setting set to use static Splunk HEC token from config")
         logging.info("Getting static credentials for Splunk HEC from config")
         splunk_static_tok = splunk_conf.get('splunk_static', 'token')
-        logging.info("Verying token passed is in the correct format")
+        logging.info("Verifying token passed is in the correct format")
         token_match = match(r"{0}".format(api_conf.uuid_regex), splunk_static_tok)
         # verify that the value in the static Splunk HEC token is valid
         if token_match is None:
@@ -367,9 +384,9 @@ def get_intelix_auth(sophos_auth, intelix_final_path):
     if sophos_auth == "static":
         # Auth is static so the creds are pulled from the config
         logging.info("Static API credentials parameter, has been passed. Getting value from config")
-        client_id = intelix_conf.get('static', 'client_id')
-        client_secret = intelix_conf.get('static', 'client_secret')
-        if int(len(client_secret)) == 0 or int(len(client_id)) == 0:
+        intelix_client_id = intelix_conf.get('static', 'client_id')
+        intelix_client_secret = intelix_conf.get('static', 'client_secret')
+        if int(len(intelix_client_secret)) == 0 or int(len(intelix_client_id)) == 0:
             # verifies that there is something in the variable
             logging.error("Please verify the static credentials are valid in config.ini")
             exit(1)
