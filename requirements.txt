@@ -4,7 +4,6 @@ certifi>=2021.5.30
 chardet>=4.0.0
 configparser>=5.0.2
 docutils>=0.17.1
-idna>=3.2
 intelix>=0.1.2
 jmespath>=0.10.0
 python-dateutil>=2.8.1
