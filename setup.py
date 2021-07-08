@@ -7,7 +7,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setuptools.setup(name='sophos_central_api_connector',
-                 version='0.1.4',
+                 version='0.1.5',
                  description='Sophos Central API Connector',
                  author='Mark Lanczak-Faulds',
                  author_email='mark.lanczak-faulds@sophos.com',
