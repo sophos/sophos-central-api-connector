@@ -222,7 +222,7 @@ def get_alerts(tenant_info, output, poll, days, reset_flag, page_size, splunk_cr
         # Send the data to get data to gather the events
         json_data = get_api.get_data(tenant_url_data, page_size, tenant_id, api)
         if len(json_data) > 0:
-            if poll and output == "stdout" or output == "json":
+            if poll and (output == "stdout" or output == "json"):
                 alert_events = api_poll.prepare_poll(json_data, temp_exists, from_str)
                 # There are events to process. Send to check the output
                 events = api_output.process_output(output, alert_events, tenant_url_data, tenant_id, api,
