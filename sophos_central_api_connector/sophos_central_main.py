@@ -44,6 +44,7 @@ def get_local_sites(tenant_info, output, page_size, tenant=None, intelix=None):
         tenant_id = ten_id
         # get data information for the tenant in the loop
         json_data = get_api.get_data(tenant_url_data, page_size, tenant_id, api)
+        print(json_data)
         for site_id, site_value in json_data.items():
             # grab the correct site category information
             cat_val = cat_data[site_value.setdefault('categoryId', 0)]
@@ -184,8 +185,9 @@ def get_alerts(tenant_info, output, poll, days, reset_flag, page_size, splunk_cr
         # Criteria has been met to use the day_flag for resetting polling
         day_flag = True
         logging.info("Reset flag passed with days and poll")
-    elif days > 1 or alerts_exists is True:
+    elif days > 1 and alerts_exists is True:
         # defaults the days to 1
+        logging.debug("defaulting the days to 1")
         days = 1
         day_flag = False
     else:
@@ -201,6 +203,7 @@ def get_alerts(tenant_info, output, poll, days, reset_flag, page_size, splunk_cr
     else:
         logging.info("No polling passed")
         # No polling has been set so calculate from and to strings normally
+        logging.debug("Day passed to gather: {0}".format(days))
         to_str, from_str = api_utils.calculate_from_to(days, poll_date=None)
 
     # Generate urls for tenants
@@ -290,7 +293,7 @@ def get_splunk_creds(splunk_final_path):
         logging.info("Config setting set to use Splunk creds from AWS Secrets Manager")
         # Confirm that the check indexer acknowledgement has not been set without the config for ack_enabled being 0
         if splunk_verify_ack == "1" and splunk_ack_enabled == "0":
-            logging.error(
+            logging.critical(
                 "To verify Splunk Index Acknowledgements, you must set the config 'splunk_ack_enabled' to '1'")
             exit(1)
         else:
@@ -309,7 +312,7 @@ def get_splunk_creds(splunk_final_path):
                 aws_token_match = match(r"{0}".format(api_conf.uuid_regex), splunk_token)
                 if aws_token_match is None:
                     # An exception will be raised if the token does not match the correct format
-                    logging.error("Please ensure you have a valid HEC token in your AWS Secrets Manager")
+                    logging.critical("Please ensure you have a valid HEC token in your AWS Secrets Manager")
                     exit(1)
                 else:
                     logging.info("HEC token is in a valid format")
@@ -326,7 +329,7 @@ def get_splunk_creds(splunk_final_path):
         token_match = match(r"{0}".format(api_conf.uuid_regex), splunk_static_tok)
         # verify that the value in the static Splunk HEC token is valid
         if token_match is None:
-            logging.error("Please ensure you have a valid HEC token in the splunk_config.ini")
+            logging.critical("Please ensure you have a valid HEC token in the splunk_config.ini")
             exit(1)
         else:
             logging.info("Token is in the correct format")
@@ -346,7 +349,7 @@ def get_sophos_creds(sophos_auth, sophos_final_path):
         client_secret = sophos_conf.get('static', 'client_secret')
         if int(len(client_secret)) == 0 or int(len(client_id)) == 0:
             # verifies that there is something in the variable
-            logging.error("Please verify the static credentials are valid in config.ini")
+            logging.critical("Please verify the static credentials are valid in config.ini")
             exit(1)
         else:
             logging.info("Values have been applied to the credential variables")
@@ -388,7 +391,7 @@ def get_intelix_auth(sophos_auth, intelix_final_path):
         intelix_client_secret = intelix_conf.get('static', 'client_secret')
         if int(len(intelix_client_secret)) == 0 or int(len(intelix_client_id)) == 0:
             # verifies that there is something in the variable
-            logging.error("Please verify the static credentials are valid in config.ini")
+            logging.critical("Please verify the static credentials are valid in config.ini")
             exit(1)
         else:
             logging.info("Values have been applied to the credential variables")
@@ -455,10 +458,11 @@ def main(args):
         logging.disable(False)
         log_name = log_level
         level = getattr(logging, log_name)
-        logging.basicConfig(level=level, format='%(asctime)s - %(levelname)s - %(message)s',
-                            datefmt='%d/%m/%Y %I:%M:%S %p')
+        log_fmt = '%(asctime)s: [%(levelname)s]: %(message)s'
+        logging.basicConfig(level=level, format=log_fmt, datefmt='%d/%m/%Y %I:%M:%S %p')
 
     logging.info("Start of logging")
+    logging.debug("Parameters passed: {0}".format(args))
 
     # Get Sophos Central API Creds and check for Splunk Creds if required
     client_id, client_secret = get_sophos_creds(sophos_auth, sophos_final_path)
@@ -525,7 +529,7 @@ def main(args):
                           intx_clean_level, intx_dry_run)
             exit(0)
         else:
-            logging.error("To run the clean_ls argument a clean_level must be provided. You can run a dry run to see"
+            logging.critical("To run the clean_ls argument a clean_level must be provided. You can run a dry run to see"
                           " what the effect of command would be to prevent items being deleted from Central")
             exit(1)
     elif intelix == "test":
@@ -535,7 +539,7 @@ def main(args):
         intx.test(intelix_client_id, intelix_client_secret, url)
     else:
         # invalid get parameter has been passed
-        logging.error("Invalid --get parameter passed")
+        logging.critical("Invalid --get parameter passed")
         exit(1)
 
     exit(0)

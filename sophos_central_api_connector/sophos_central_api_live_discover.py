@@ -1,19 +1,19 @@
 import logging
 import json
 import requests
+from datetime import datetime, timedelta
 from urllib3.util.retry import Retry
 from time import sleep
 from sophos_central_api_connector import sophos_central_api_get_data as get_api
 
-api = "live-discover"
 page_size = "250"
 
 
-def live_discover(tenant_data, input_type, input_value, search_filter, variables):
+def live_discover(tenant_data, input_type, input_value, search_filter, variables, api):
     def gather_ld():
         # build the payload to post
         logging.info("Building payload information for saved search")
-        payload_dict = build_json_payload(input_type, input_value, query_det, search_filter, variables)
+        payload_dict = build_json_payload(input_type, input_value, query_det, search_filter, variables, api)
 
         # post run
         logging.info("Start posting saved queries")
@@ -22,18 +22,21 @@ def live_discover(tenant_data, input_type, input_value, search_filter, variables
 
         # run checker
         logging.info("Start checking query status")
-        run_info = multi_query_run_checker(tenant_data, post_dict)
+        run_info = multi_query_run_checker(tenant_data, post_dict, api)
         logging.debug("Run info: {0}".format(run_info))
 
         # get endpoint data
-        logging.info("Gather endpoint information")
-        ep_info = get_ld_endpoints(tenant_data, run_info)
-        logging.debug("Endpoint information: {0}".format(ep_info))
+        if api == "live-discover":
+            logging.info("Gather endpoint information")
+            ep_info = get_ld_endpoints(tenant_data, run_info, api)
+            logging.debug("Endpoint information: {0}".format(ep_info))
+        elif api == "xdr-datalake":
+            ep_info = None
 
         # get run results
         logging.info("Gather results based on run ids")
         size = 1000
-        result_dict = get_run_results(tenant_data, run_info, size)
+        result_dict = get_run_results(tenant_data, run_info, size, api)
         logging.debug("Result data: {0}".format(result_dict))
 
         return run_info, ep_info, result_dict
@@ -41,7 +44,7 @@ def live_discover(tenant_data, input_type, input_value, search_filter, variables
     if input_type == "saved":
         # Get saved query details
         logging.info("Getting saved search details")
-        query_det = get_queries(tenant_data, True, input_value)
+        query_det = get_queries(tenant_data, True, input_value, api)
         if not variables:
             for s_id, val in query_det.items():
                 for t_id, s_val in val.items():
@@ -60,16 +63,11 @@ def live_discover(tenant_data, input_type, input_value, search_filter, variables
         # todo: check the size of the adhoc query
         exit(1)
     elif input_type == "list":
-        query_list = get_queries(tenant_data, False, None)
+        query_list = get_queries(tenant_data, False, None, api)
         return query_list
 
 
-def data_lake():
-    logging.info("Coming soon")
-    exit(1)
-
-
-def get_queries(tenant_url_data, query_find, query_det):
+def get_queries(tenant_url_data, query_find, query_det, api):
     def find_query(query_dict, query_info, tenant, fdict):
         logging.info("Looking for saved query in dictionary")
 
@@ -80,18 +78,42 @@ def get_queries(tenant_url_data, query_find, query_det):
                 logging.info("Search ID: {0}".format(q_id))
                 if item['variables']:
                     if fdict.get(tenant):
-                        fdict.update({tenant: {q_id: {"name": item['name'], "description": item['description'],
-                                                      "template_variables": item['variables']}}})
+                        fdict.update({
+                            tenant: {
+                                q_id: {
+                                    "name": item['name'],
+                                    "description": item['description'],
+                                    "template_variables": item['variables']
+                                }
+                            }
+                        })
                     else:
-                        fdict[tenant] = {q_id: {"name": item['name'], "description": item['description'],
-                                                "template_variables": item['variables']}}
+                        fdict[tenant] = {
+                            q_id: {
+                                "name": item['name'],
+                                "description": item['description'],
+                                "template_variables": item['variables']
+                            }
+                        }
                 else:
                     if fdict.get(tenant):
-                        fdict[tenant] = {q_id: {"name": item['name'], "description": item['description'],
-                                                "template_variables": None}}
+                        fdict[tenant] = {
+                            q_id: {
+                                "name": item['name'],
+                                "description": item['description'],
+                                "template_variables": None
+                            }
+                        }
                     else:
-                        fdict.update({tenant: {q_id: {"name": item['name'], "description": item['description'],
-                                                      "template_variables": None}}})
+                        fdict.update({
+                            tenant: {
+                                q_id: {
+                                    "name": item['name'],
+                                    "description": item['description'],
+                                    "template_variables": None
+                                }
+                            }
+                        })
                 logging.debug("Query details: {0}".format(fdict))
             else:
                 pass
@@ -110,7 +132,7 @@ def get_queries(tenant_url_data, query_find, query_det):
 
     # Gather the queries for the tenants
     new_dict = dict()
-    logging.info("Attempting to get Live Discover queries")
+    logging.info("Attempting to get queries")
 
     for ten_id, ten_item in tenant_url_data.items():
         # Pass the ten_url_data and gather the queries
@@ -127,7 +149,7 @@ def get_queries(tenant_url_data, query_find, query_det):
     return new_dict
 
 
-def build_json_payload(input_type, input_value, query_data, filters, variables):
+def build_json_payload(input_type, input_value, query_data, filters, variables, api):
     # Open find query json if available
     rebuild_dict = dict()
 
@@ -137,14 +159,37 @@ def build_json_payload(input_type, input_value, query_data, filters, variables):
             q_desc = s_det['description']
             if variables:
                 try:
-                    if input_type == "saved":
-                        con_json = {"matchEndpoints": {"filters": [filters]}, "savedQuery": {"queryId": s_id},
-                                    "variables": variables}
+                    if input_type == "saved" and api == "live-discover":
+                        con_json = {
+                            "matchEndpoints": {
+                                "filters": [filters]
+                            },
+                            "savedQuery": {
+                                "queryId": s_id
+                            },
+                            "variables": variables
+                        }
+                    elif input_type == "saved" and api == "xdr-datalake":
+                        con_json = {
+                            "savedQuery": {
+                                "queryId": s_id
+                            },
+                            "variables": variables
+                        }
                     elif input_type == "adhoc":
-                        con_json = {"matchEndpoints": {"filters": [filters]}, "adHocQuery": {"template": input_value},
-                                    "variables": variables}
+                        con_json = {
+                            "matchEndpoints": {
+                                "filters": [
+                                    filters
+                                ]
+                            },
+                            "adHocQuery": {
+                                "template": input_value
+                            },
+                            "variables": variables
+                        }
                     else:
-                        logging.error("Input type is not valid, please review variables passed")
+                        logging.critical("Input type is not valid, please review variables passed")
                         exit(1)
 
                     json.dumps(con_json)
@@ -156,15 +201,40 @@ def build_json_payload(input_type, input_value, query_data, filters, variables):
                     logging.info("JSON has been validated successfully")
                     logging.debug("JSON Passed: {0}".format(con_json))
                     logging.info("Adding payload to query dict")
-                    rebuild_dict[k] = {s_id: {"name": q_name, "description": q_desc, "payload": con_json}}
+                    rebuild_dict[k] = {
+                        s_id: {
+                            "name": q_name,
+                            "description": q_desc,
+                            "payload": con_json
+                        }
+                    }
             elif not variables:
                 try:
-                    if input_type == "saved":
-                        con_json = {"matchEndpoints": {"filters": [filters]}, "savedQuery": {"queryId": s_id}}
+                    if input_type == "saved" and api == "live-discover":
+                        con_json = {
+                            "matchEndpoints": {
+                                "filters": [filters]},
+                            "savedQuery": {
+                                "queryId": s_id
+                            }
+                        }
+                    elif input_type == "saved" and api == "xdr-datalake":
+                        con_json = {
+                            "savedQuery": {
+                                "queryId": s_id
+                            }
+                        }
                     elif input_type == "adhoc":
-                        con_json = {"matchEndpoints": {"filters": [filters]}, "adHocQuery": {"template": input_value}}
+                        con_json = {
+                            "matchEndpoints": {
+                                "filters": [filters]
+                            },
+                            "adHocQuery": {
+                                "template": input_value
+                            }
+                        }
                     else:
-                        logging.error("Input type is not valid, please review variables passed")
+                        logging.critical("Input type is not valid, please review variables passed")
                         exit(1)
 
                     json.dumps(con_json)
@@ -175,7 +245,13 @@ def build_json_payload(input_type, input_value, query_data, filters, variables):
                 else:
                     logging.info("JSON has been validated successfully")
                     logging.info("Adding payload to query dict")
-                    rebuild_dict[k] = {s_id: {"name": q_name, "description": q_desc, "payload": con_json}}
+                    rebuild_dict[k] = {
+                        s_id: {
+                            "name": q_name,
+                            "description": q_desc,
+                            "payload": con_json
+                        }
+                    }
             else:
                 pass
 
@@ -189,13 +265,12 @@ def post_ld_run(tenant_url_data, ld_dict):
             logging.info("Posting query")
             post_res = requests.post(url, headers=headers, json=q_payload)
             post_res.raise_for_status()
-        except requests.exceptions.HTTPError:  # as http_err:
+        except requests.exceptions.HTTPError:
             if post_res.status_code == 404:
                 logging.error("Item not found. Please verify filter for this query id")
                 p_data = post_res.json()
                 logging.debug(json.dumps(p_data, indent=2))
                 return p_data
-                # raise http_err
             elif post_res.status_code == 400:
                 logging.error(post_res.text)
                 p_data = post_res.json()
@@ -234,27 +309,43 @@ def post_ld_run(tenant_url_data, ld_dict):
                         pq_id = post_data['id']
                         pq_created = post_data['createdAt']
                         pq_status = post_data['status']
-                        ep_count = post_data['endpointCounts']['total']
-                        pq_dict[k] = {q_key: {"name": q_val['name'], "description": q_val['description'],
-                                              "payload": q_val['payload'],
-                                              "post_data": {"pq_id": pq_id, "createdAt": pq_created,
-                                                            "status": pq_status,
-                                                            "ep_count": ep_count}}}
-                        # pq_dict.update(pq_data)
+                        ep_count = post_data.get('endpointCounts', {}).get('total')
+                        pq_dict[k] = {
+                            q_key: {
+                                "name": q_val['name'],
+                                "description": q_val['description'],
+                                "payload": q_val['payload'],
+                                "post_data": {
+                                    "pq_id": pq_id,
+                                    "createdAt": pq_created,
+                                    "status": pq_status,
+                                    "ep_count": ep_count
+                                }
+                            }
+                        }
                     elif post_data.get('error'):
                         pq_err = post_data['error']
-                        pq_errmsg = post_data['message']
+                        pq_errmsg = post_data.get('message', None)
                         r_id = post_data['requestId']
-                        pq_dict[k] = {q_key: {"name": q_val['name'], "description": q_val['description'],
-                                              "payload": q_val['payload'],
-                                              "post_data": {"r_id": r_id, "error": pq_err, "error_message": pq_errmsg}}}
+                        pq_dict[k] = {
+                            q_key: {
+                                "name": q_val['name'],
+                                "description": q_val['description'],
+                                "payload": q_val['payload'],
+                                "post_data": {
+                                    "r_id": r_id,
+                                    "error": pq_err,
+                                    "error_message": pq_errmsg
+                                }
+                            }
+                        }
                 else:
                     logging.debug("No searches found in list for tenant: {0}".format(tenant))
 
     return pq_dict
 
 
-def multi_query_run_checker(tenant_url_data, ld_dict):
+def multi_query_run_checker(tenant_url_data, ld_dict, api):
     def loop_check():
         logging.debug("loop check")
         run_check = True
@@ -264,7 +355,7 @@ def multi_query_run_checker(tenant_url_data, ld_dict):
                     new_status = val.get('post_data').get('status')
                     t_remaining = val.get('post_data').get('time_remaining')
                     if new_status != "finished":
-                        if t_remaining == 0:
+                        if t_remaining <= 0:
                             logging.error("Max query duration reached. Query '{0}' will be terminated".format(sid))
                             val['post_data']['terminated'] = True
                             pass
@@ -290,9 +381,24 @@ def multi_query_run_checker(tenant_url_data, ld_dict):
                         status = run_status.get('status')
                         logging.debug("run status: {0}".format(status))
                         s_vals['post_data']['status'] = status
-                        s_vals['post_data']['time_remaining'] = run_status['timeRemainingInSeconds']
+                        if api == "live-discover":
+                            s_vals['post_data']['time_remaining'] = run_status['timeRemainingInSeconds']
+                        elif api == "xdr-datalake":
+                            # XDR searches timeout after 15mins
+                            created_time = run_status['createdAt']
+                            dt_created_round = created_time[:-5]
+                            # convert to datetime
+                            dt_created = datetime.strptime(dt_created_round, '%Y-%m-%dT%H:%M:%S')
+                            # convert the createdAt time to epoch
+                            xdr_ctime_epoch = datetime.timestamp(dt_created)
+                            # get the time now in epoch
+                            now = datetime.utcnow().replace(microsecond=0).timestamp()
+                            calc_time_diff = int(now - xdr_ctime_epoch)
+                            calc_time_remaining = 900 - calc_time_diff
+                            s_vals['post_data']['time_remaining'] = calc_time_remaining
                         s_vals['post_data']['finishedAt'] = run_status.get('finishedAt', None)
-                        s_vals['post_data']['statuses'] = run_status['endpointCounts']['statuses']
+                        s_vals['post_data']['statuses'] = run_status.get('endpointCounts', {}).get('statuses')
+                        s_vals['post_data']['result'] = run_status.get('result')
                     else:
                         logging.info("No run status information for search id: {0}".format(run_id))
 
@@ -321,7 +427,7 @@ def get_ld_run_status(tenant_url_data, tenant, run_id):
     return run_status
 
 
-def get_ld_endpoints(tenant_url_data, run_data):
+def get_ld_endpoints(tenant_url_data, run_data, api):
     def get_runid_eps():
         for key, value in tenant_url_data.items():
             if key == tenant:
@@ -352,7 +458,7 @@ def get_ld_endpoints(tenant_url_data, run_data):
     return ld_ep_dict
 
 
-def get_run_results(tenant_url_data, run_data, size):
+def get_run_results(tenant_url_data, run_data, size, api):
     def get_results():
         for key, value in tenant_url_data.items():
             if key == tenant:
@@ -373,17 +479,35 @@ def get_run_results(tenant_url_data, run_data, size):
     # For loop to go through the dict and check all run ids
     for ten_key, val in run_data.items():
         for s_id, s_vals in val.items():
-            if s_vals.get('post_data').get('pq_id'):
+            if s_vals.get('post_data', {}).get('pq_id'):
                 run_id = s_vals['post_data']['pq_id']
                 url_ext = "/runs/{0}/results".format(run_id)
-                success_withdata = s_vals['post_data']['statuses']['finished']['succeeded']['withData']
+                if api == "live-discover":
+                    success_withdata = s_vals['post_data']['statuses']['finished']['succeeded']['withData']
+                    failed_withdata = s_vals['post_data']['statuses']['finished']['failed']['withData']
+                    timedout_withdata = s_vals['post_data']['statuses']['finished']['timedOut']['withData']
+                    if success_withdata > 0:
+                        withdata = True
+                    elif failed_withdata > 0:
+                        withdata = True
+                    elif timedout_withdata > 0:
+                        withdata = True
+                    else:
+                        withdata = False
+                elif api == "xdr-datalake":
+                    withdata = True
+                # status = s_vals.get('post_data', {}).get('status')
+                # result = s_vals.get('post_data', {}).get('result')
                 terminated = s_vals.get('post_data').get('terminated')
                 logging.info("Checking whether any endpoints completed with data")
-                if success_withdata > 0:
+                if withdata:
                     logging.info("Some endpoints have returned data")
-                    logging.info("Waiting 2 minutes to start gathering results")
+                    if api == "live-discover":
+                        logging.info("Waiting 2 minutes to start gathering results")
+                        sleep(120)
+                    else:
+                        pass
                     tenant = ten_key
-                    sleep(120)
                     res_data = get_results()
                     if q_res_dict.get(run_id):
                         logging.info("Results gathered")
@@ -391,7 +515,7 @@ def get_run_results(tenant_url_data, run_data, size):
                     else:
                         logging.info("Results gathered")
                         q_res_dict[run_id] = res_data
-                elif success_withdata == 0 and terminated:
+                elif not withdata and terminated:
                     logging.info("This query was terminated, with no results. Skipping")
                 else:
                     logging.info("No results have been returned for this run id: '{0}'".format(run_id))
@@ -401,8 +525,8 @@ def get_run_results(tenant_url_data, run_data, size):
                         q_res_dict[run_id] = {"tenant": ten_key, "results": "No EPs completed with data"}
             else:
                 logging.info("No results have been returned")
+                r_id = s_vals.get('post_data', {}).get('r_id')
                 if q_res_dict.get(run_id):
-                    r_id = s_vals['post_data']['r_id']
                     q_res_dict.update({r_id: {"tenant": ten_key, "results": "No EPs completed with data"}})
                 else:
                     q_res_dict[r_id] = {"tenant": ten_key, "results": "No EPs completed with data"}
@@ -417,6 +541,7 @@ def build_run_report():
 
 
 def get_misp_attributes(misp_url, search_type, search_val, misp_tok, wildcard):
+    logging.debug("MISP Search Type: {0}".format(search_type))
     # create body to search for the attributes
     if search_type == "eventid":
         http_body = {"returnFormat": "json", "eventid": "{0}".format(search_val), "type": {"OR": ["ip-src", "ip-dst",
@@ -432,6 +557,8 @@ def get_misp_attributes(misp_url, search_type, search_val, misp_tok, wildcard):
         logging.error("Search type not yet set. Update function: 'get_misp_attributes' with new type")
         return None
 
+    logging.debug("HTTP Body: {0}".format(http_body))
+
     misp_headers = dict()
     misp_headers["Authorization"] = "{0}".format(misp_tok)
     misp_headers["Accept"] = "application/json"
@@ -442,10 +569,11 @@ def get_misp_attributes(misp_url, search_type, search_val, misp_tok, wildcard):
     res_sess.mount('https://', requests.adapters.HTTPAdapter(max_retries=retries))
 
     try:
+        logging.info("Posting request to gather MISP Attributes")
         misp_res = res_sess.post(misp_url, headers=misp_headers, json=http_body)
         misp_res.raise_for_status()
     except requests.exceptions.HTTPError as http_err:
-        logging.error(http_err)
+        logging.critical(http_err)
         exit(1)
     finally:
         attr_list = list()
@@ -453,6 +581,9 @@ def get_misp_attributes(misp_url, search_type, search_val, misp_tok, wildcard):
         json_res = misp_res.json()
         json_resp = json_res['response']
         json_att = json_resp['Attribute']
+        logging.debug("Attribute data:")
+        logging.debug("")
+        logging.debug(json_att)
         for item in json_att:
             if item['type'] == "ip-src" or item['type'] == "ip-dst":
                 ind_type = "ip"
@@ -462,7 +593,6 @@ def get_misp_attributes(misp_url, search_type, search_val, misp_tok, wildcard):
                 ind_type = "domain"
             else:
                 ind_type = item['type']
-
             if wildcard:
                 attr_list.append(
                     {"indicator_type": ind_type, "misp_type": item['type'], "data": "%{0}%".format(item['value'])})
@@ -470,8 +600,18 @@ def get_misp_attributes(misp_url, search_type, search_val, misp_tok, wildcard):
                 attr_list.append(
                     {"indicator_type": ind_type, "misp_type": item['type'], "data": "{0}".format(item['value'])})
 
-        attr_dict['ioc_data'] = attr_list
-        attrib = json.dumps(attr_dict)
+        logging.debug("Length of attribute list: {0}".format(len(attr_list)))
+        if len(attr_list) > 0:
+            attr_dict['ioc_data'] = attr_list
+            attrib = json.dumps(attr_dict)
+        else:
+            logging.critical("No MISP attributes have been returned")
+            logging.critical("Exiting script")
+            exit(1)
+
         res_sess.close()
+
+        logging.debug("MISP attributes being returned:")
+        logging.debug(attrib)
 
         return attrib

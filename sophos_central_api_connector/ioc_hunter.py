@@ -1,3 +1,4 @@
+import datetime
 import logging
 import getpass
 import json
@@ -12,27 +13,41 @@ from sophos_central_api_connector.config import sophos_central_api_config as api
 from sophos_central_api_connector import sophos_central_api_output as api_output
 from sophos_central_api_connector import sophos_central_api_live_discover as sld
 
+
 # Global variables
-api = "live-discover"
 page_size = "250"
 
 
 def main(params):
-    log_level = "INFO"
-    log_fmt = '%(asctime)s - %(levelname)s - %(message)s'
-    log_name = log_level
-    level = getattr(logging, log_name)
-    logging.basicConfig(level=level, format=log_fmt, datefmt='%d/%m/%Y %I:%M:%S %p')
-
-    logging.info("Start of Logging")
-
     # set params to variables
+    log_level = params.log_level
     tenant = params.tenant
     search_filter = params.filter
     search_variables = params.variables
     search_type = params.search_type
     search_val = params.search_input
     misp_attr = params.misp
+    api = params.api
+    output = params.output
+
+    if log_level is None:
+        logging.disable(True)
+    else:
+        logging.disable(False)
+        log_name = log_level
+        level = getattr(logging, log_name)
+        log_fmt = '%(asctime)s: [%(levelname)s]: %(message)s'
+        logging.basicConfig(level=level, format=log_fmt, datefmt='%d/%m/%Y %I:%M:%S %p')
+
+    logging.info("Start of Logging")
+
+    if api == "ld":
+        api = "live-discover"
+    elif api == "xdr":
+        api = "xdr-datalake"
+    else:
+        logging.error("No api passed, exiting")
+        exit(1)
 
     if misp_attr:
         misp_conf_path = api_conf.misp_conf_path
@@ -57,7 +72,7 @@ def main(params):
 
         if misp_tok:
             try:
-                # Pull the credentials from AWS Secret Manager and pass to initialise Sophos Central API
+                # Pull the credentials from AWS Secret Manager and pass to initialise misp
                 misp_secret = awssecret.get_secret(secret_name, region_name)
                 misp_tok = misp_secret['{0}'.format(misp_tok)]
                 logging.info("MISP auth token applied")
@@ -76,10 +91,11 @@ def main(params):
                 exit(1)
 
         if not attributes:
-            logging.error("No attributes found, exiting")
+            logging.critical("No attributes found, exiting")
             exit(1)
         else:
             logging.info("MISP attributes obtained")
+
             pass
     else:
         pass
@@ -95,48 +111,98 @@ def main(params):
             pass
     elif search_type == "list":
         pass
+    elif api == "xdr-datalake":
+        pass
     else:
-        logging.error("No filter passed, A filter must be provided")
+        logging.critical("No filter passed, A filter must be provided")
         exit(1)
 
-    if search_variables and misp_attr:
-        # Format the search date
-        date_frmt = "{0}.000Z".format(search_variables[2])
+    if (search_variables and misp_attr) or (misp_attr and api == "xdr-datalake"):
+        if api == "live-discover":
+            # Format the search date
+            date_frmt = "{0}.000Z".format(search_variables[2])
+        else:
+            pass
 
-        # esitmated size of variables
+        # estimated size of variables
         ioc_size = getsizeof(attributes)
         if ioc_size < 1 or ioc_size > 5000:
-            logging.error(
+            logging.critical(
                 "Size of IOC JSON must be in the range of 1 - 5000. Current estimated size is: {0}".format(ioc_size))
             exit(1)
         else:
             pass
 
         # Build JSON
-        variables_json = [{"name": "Number of Hours of activity to search", "dataType": "text",
-                           "value": "{0}".format(search_variables[0])},
-                          {"name": "IOC JSON", "dataType": "text",
-                           "value": attributes},
-                          {"name": "Start Search From", "dataType": "dateTime", "value": "{0}".format(date_frmt)}]
+        if api == "live-discover":
+            variables_json = [
+                {
+                    "name": "Number of Hours of activity to search",
+                    "dataType": "text",
+                    "value": "{0}".format(search_variables[0])
+                },
+                {
+                    "name": "IOC JSON",
+                    "dataType": "text",
+                    "value": attributes
+                },
+                {
+                    "name": "Start Search From",
+                    "dataType": "dateTime",
+                    "value": "{0}".format(date_frmt)
+                }
+            ]
+        elif api == "xdr-datalake":
+            variables_json = [
+                {
+                    "name": "IOC_JSON",
+                    "dataType": "text",
+                    "value": attributes
+                }
+            ]
     elif search_variables:
-        # Format the search date
-        date_frmt = "{0}.000Z".format(search_variables[2])
+        if api == "live-discover":
+            # Format the search date
+            date_frmt = "{0}.000Z".format(search_variables[2])
+        else:
+            pass
 
         # esitmated size of variables
         ioc_size = getsizeof(search_variables)
         if ioc_size < 1 or ioc_size > 5000:
-            logging.error(
+            logging.critical(
                 "Size of IOC JSON must be in the range of 1 - 5000. Current estimated size is: {0}".format(ioc_size))
             exit(1)
         else:
             pass
 
         # Build JSON
-        variables_json = [{"name": "Number of Hours of activity to search", "dataType": "text",
-                           "value": "{0}".format(search_variables[0])},
-                          {"name": "IOC JSON", "dataType": "text",
-                           "value": search_variables[1]},
-                          {"name": "Start Search From", "dataType": "dateTime", "value": "{0}".format(date_frmt)}]
+        if api == "live-discover":
+            variables_json = [
+                {
+                    "name": "Number of Hours of activity to search",
+                    "dataType": "text",
+                    "value": "{0}".format(search_variables[0])
+                },
+                {
+                    "name": "IOC JSON",
+                    "dataType": "text",
+                    "value": search_variables[1]
+                },
+                {
+                    "name": "Start Search From",
+                    "dataType": "dateTime",
+                    "value": "{0}".format(date_frmt)
+                }
+            ]
+        elif api == "xdr-datalake":
+            variables_json = [
+                {
+                    "name": "IOC_JSON",
+                    "dataType": "text",
+                    "value": search_variables[0]
+                }
+            ]
     else:
         logging.info("No variables passed")
         variables_json = None
@@ -158,16 +224,28 @@ def main(params):
 
     # kick off live discover search
     if search_type == "list":
-        query_data = sld.live_discover(tenant_url_data, search_type, search_val, search_filter, variables_json)
-        for key, value in query_data.items():
-            print(json.dumps(value, indent=2))
+        query_data = sld.live_discover(tenant_url_data, search_type, search_val, search_filter, variables_json, api)
+        if output == 'json':
+            api_output.process_output_json(query_data, "{0}_query_list.json".format(api), api)
+        else:
+            for key, value in query_data.items():
+                print(json.dumps(value, indent=2))
     else:
         ld_data, ep_data, res_data = sld.live_discover(tenant_url_data, search_type, search_val, search_filter,
-                                                       variables_json)
+                                                       variables_json, api)
         # output results to temp
-        api_output.process_output_temp(ld_data, "search_data.json")
-        api_output.process_output_temp(ep_data, "endpoint_data.json")
-        api_output.process_output_temp(res_data, "result_data.json")
+
+        # get datetime for files
+        filetime = datetime.datetime.utcnow()
+        filetimestamp = filetime.timestamp()
+
+        if ep_data:
+            api_output.process_output_json(ep_data, "{0}_endpoint_data_{1}.json".format(api, filetimestamp), api)
+        else:
+            logging.info("No EP data to output")
+
+        api_output.process_output_json(ld_data, "{0}_search_data_{1}.json".format(api, filetimestamp), api)
+        api_output.process_output_json(res_data, "{0}_result_data_{1}.json".format(api, filetimestamp), api)
 
     logging.info("Script complete")
     exit(0)
@@ -200,16 +278,26 @@ if __name__ == "__main__":
                                                           " filter. You can set a custom JSON filter following the "
                                                           "documentation. \nEncapsulate your filter in single quotes, "
                                                           "''")
-    parser.add_argument('-v', '--variables', nargs='+', help="Add the following values for the variables in order:\n"
+    parser.add_argument('-v', '--variables', nargs='+', help="Add the following values for the variables in order for "
+                                                             "live-discover:\n"
                                                              "[0] Number of Hours of activity to search\n"
                                                              "[1] IOC JSON\n"
-                                                             "[2] Start Search From")
+                                                             "[2] Start Search From\n"
+                                                             "For XDR, only IOC JSON is required")
     parser.add_argument('-m', '--misp', type=set_bool_val, nargs='?', const=True, default=False, help="Enable MISP "
                                                                                                       "attributes. "
                                                                                                       "Boolean")
     parser.add_argument('-mt', '--misp_type', choices=["eventid", "tag"], help="Specify whether you want to get "
                                                                                "attributes for an event ID or tag")
     parser.add_argument('-mv', '--misp_val', help="The value to pass according to the misp attribute type to search for")
+    parser.add_argument('-a', '--api', choices=["ld", "xdr"], required=True,
+                        help="[ld] - This will perform the search directly on endpoints which are put in the filter\n"
+                             "[xdr] - This will perform the search on the DataLake")
+    parser.add_argument('-ll', '--log_level', choices=['INFO', 'DEBUG', 'CRITICAL', 'WARNING', 'ERROR'],
+                        help="Set logging level mode for more detailed error information, default is disabled")
+    parser.add_argument('-o', '--output', choices=['stdout', 'json'], default="stdout",
+                        help="Allows you to specify an output method for the query list retrieved. If no option is "
+                             "selected it will default to stdout.")
 
     # parse the argument values to the arg variable
     args = parser.parse_args()

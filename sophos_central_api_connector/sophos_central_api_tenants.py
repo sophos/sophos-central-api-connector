@@ -12,10 +12,13 @@ def gen_tenant_headers(headers, whoami_id, whoami_type, header_type):
             # the type is tenant so just return the data to gather the events
             logging.info("uuid is tenant only. Applying to the tenant headers")
             logging.info("Skipping collecting further information on the tenant ids")
-            tenant_headers = {"{0}".format(header_type): "{0}".format(whoami_id)}
+            tenant_headers = {
+                "{0}".format(header_type): "{0}".format(whoami_id)
+            }
             return tenant_headers
         else:
             # return that the type is not tenant so the tenant information can be gathered
+            logging.info("whoami type is not tenant. Need to gather tenant information")
             tenant_headers = None
             return tenant_headers
     else:
@@ -44,7 +47,8 @@ def get_tenant_info(headers, tenant_url, sophos_access_token):
         # If the connection is not successful then pass back errors
         logging.error("Failed to get tenant information")
         res_tenant_error_code = tenant_data['error']
-        return None, res_tenant_code, res_tenant_error_code
+        logging.error("{0}: {1}".format(res_tenant_error_code, res_tenant_code))
+        exit(1)
 
 
 def get_next_page(tenant_url, headers, tenant_page_total, sophos_access_token, tenant_info):
@@ -58,9 +62,18 @@ def get_next_page(tenant_url, headers, tenant_page_total, sophos_access_token, t
         # from the tenant data construct the headers to connect to the correct api url
         for item in tenant_data['items']:
             tenant_id = "{0}".format(item['id'])
-            tenant_headers = {"X-Tenant-ID": tenant_id, "Authorization": "Bearer {0}".format(sophos_access_token),
-                              "Accept": "application/json"}
-            tenant_item = {item['id']: {"name": item['name'], "headers": tenant_headers, "page_url": item['apiHost']}}
+            tenant_headers = {
+                "X-Tenant-ID": tenant_id,
+                "Authorization": "Bearer {0}".format(sophos_access_token),
+                "Accept": "application/json"
+            }
+            tenant_item = {
+                item['id']: {
+                    "name": item['name'],
+                    "headers": tenant_headers,
+                    "page_url": item['apiHost']
+                }
+            }
             tenant_info.update(tenant_item)
 
         next_page += 1
@@ -76,5 +89,11 @@ def type_tenant(tenant_headers, whoami_id, tenant_url, sophos_access_token):
     # Organisation
     tenant_headers["Authorization"] = "Bearer {0}".format(sophos_access_token)
     tenant_headers["Accept"] = "application/json"
-    tenant_info = {whoami_id: {"name": "tenant", "headers": tenant_headers, "page_url": tenant_url}}
+    tenant_info = {
+        whoami_id: {
+            "name": "tenant",
+            "headers": tenant_headers,
+            "page_url": tenant_url
+        }
+    }
     return tenant_info

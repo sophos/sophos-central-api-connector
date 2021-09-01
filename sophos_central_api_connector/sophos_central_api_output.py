@@ -75,8 +75,15 @@ def process_output_json(json_items, filename, api):
         final_intx_del_path = api_utils.get_file_location(del_path)
         if not os.path.exists(final_intx_del_path):
             os.makedirs(final_intx_del_path)
-        with open(os.path.join(final_intx_del_path, filename), "w", encoding='utf-8') as intx_file:
-            json.dump(json_items, intx_file, ensure_ascii=False, indent=2)
+        with open(os.path.join(final_intx_del_path, filename), "w", encoding='utf-8') as intx_del_file:
+            json.dump(json_items, intx_del_file, ensure_ascii=False, indent=2)
+    elif api == "xdr-datalake" or api == "live-discover":
+        q_path = api_conf.output_queries_path
+        final_q_path = api_utils.get_file_location(q_path)
+        if not os.path.exists(final_q_path):
+            os.makedirs(final_q_path)
+        with open(os.path.join(final_q_path, filename), "w", encoding='utf-8') as q_res_file:
+            json.dump(json_items, q_res_file, ensure_ascii=False, indent=2)
 
 
 def process_output_stdout(json_items):

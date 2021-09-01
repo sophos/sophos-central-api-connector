@@ -1,6 +1,7 @@
 import requests
 import logging
 import getpass
+import json
 import configparser as cp
 import sophos_central_api_connector.config.sophos_central_api_config as api_conf
 import sophos_central_api_connector.sophos_central_api_tenants as api_tenant
@@ -34,7 +35,7 @@ def ten_auth():
         if client_id:
             client_secret = getpass.getpass(prompt="Provide Sophos Central API Client Secret: ", stream=None)
         else:
-            logging.error("No Client ID provided. Exiting")
+            logging.critical("No Client ID provided. Exiting")
             exit(1)
 
     # Set authorisation and whoami URLs
@@ -103,7 +104,10 @@ def validate_id_headers(sophos_access_token):
     if sophos_access_token[0] is not None:
         # apply the bearer token to the headers and start getting org_id
         logging.info("Applying the bearer token to the 'Authorization' headers")
-        headers = {"Authorization": "Bearer {0}".format(sophos_access_token), "Accept": "application/json"}
+        headers = {
+            "Authorization": "Bearer {0}".format(sophos_access_token),
+            "Accept": "application/json"
+        }
         return headers
     else:
         # print the response code and message along with the error code
@@ -120,17 +124,15 @@ def get_whoami_data(headers, whoami_url):
     logging.info("Attempting to get whoami ID")
     try:
         res_whoami = requests.get(whoami_url, headers=headers)
-        res_whoami_code = res_whoami.status_code
-        whoami_data = res_whoami.json()
+        res_whoami.raise_for_status()
     except requests.exceptions.RequestException as res_exception:
         logging.error("Failed to obtain the whoami ID")
-        res_whoami_error_code = whoami_data['error']
+        whoami_data = res_whoami.json()
         logging.error(res_exception)
-        logging.error("Err Code: {0}, Err Detail: {1}".format(res_whoami_code, res_whoami_error_code))
+        logging.error(json.dumps(whoami_data, indent=2))
         exit(1)
-
-    # check the response code and act accordingly
-    if res_whoami_code == 200:
+    else:
+        whoami_data = res_whoami.json()
         whoami_id = whoami_data['id']
         whoami_type = whoami_data['idType']
         logging.info("Successfully obtained whoami ID")

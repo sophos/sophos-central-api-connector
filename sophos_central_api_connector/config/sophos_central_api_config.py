@@ -10,6 +10,7 @@ endpoints_uri = '/endpoint/v1/endpoints'
 directory_uri = '/common/v1/directory'
 settings_uri = '/endpoint/v1/settings'
 livediscover_uri = '/live-discover/v1/queries'
+xdr_uri = '/xdr-query/v1/queries'
 
 
 # Default Value
@@ -30,6 +31,7 @@ output_al_path = PurePath("/output/get_alerts")
 output_ls_path = PurePath("/output/get_local_sites")
 output_intx_path = PurePath("/output/intelix")
 output_intx_del_path = PurePath("/output/intelix/delete_local_sites")
+output_queries_path = PurePath("/output/query_results")
 poll_conf_path = PurePath("/polling/poll_config.json")
 poll_alerts_path = PurePath("/polling/alert_ids.json")
 poll_temp_path = PurePath("/polling/temp_alert_ids.json")

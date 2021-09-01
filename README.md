@@ -6,7 +6,7 @@ Python library to utilise many of the features in Sophos Central API across mult
 
 ![Python](https://img.shields.io/badge/python-v3.6+-blue.svg)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Generic badge](https://img.shields.io/badge/version-0.1.4-green.svg)](https://shields.io/)
+[![Generic badge](https://img.shields.io/badge/version-0.1.6-green.svg)](https://shields.io/)
    ___
 
 ## Table of contents: 
@@ -43,7 +43,7 @@ All features can be run against single or multiple tenants
    * Clean up Global exclusions
       * Compare exclusions to SophosLabs Intelix
    * Generate report
-* IOC Hunting - Utilising Live Discover
+* IOC Hunting - Utilising Live Discover or XDR DataLake
    * MISP Attribute hunting (eventId, tags)
    * RAW JSON input
    * Saved search
@@ -56,23 +56,23 @@ Want to test as quickly as possible? Follow the below quick start steps to begin
 1. Create a folder e.g "sophos_test"
 1. Open a command prompt/terminal
 1. Create a Python Virtual Environment:
-   ```python
+   ```commandline
    python -m venv <folder_name>
    ```
 1. Activate the Python Virtual Environment:
-   ```python
+   ```commandline
    <path_to_folder>\Scripts\activate
    ```
 1. Install the Sophos Central API Connector (this will also install the requirements):
-   ```python
+   ```commandline
    pip install sophos-central-api-connector
    ```
 1. Once it has finished installing browse to:
-   ```python
+   ```commandline
    cd <path_to_folder>\Lib\site-packages\sophos_central_api_connector
    ```
 1. Run the following command to view help to begin:
-   ```python
+   ```commandline
    python sophos_central_main.py --help
    ```
 1. Add your Sophos Central API id and secret to the sophos_config.ini under the folder: \Lib\site-packages\sophos_central_api_connector\config
@@ -87,7 +87,7 @@ In order to use the package you will require a valid API key from your Sophos Ce
 ___
 
 ## Install
-```python
+```commandline
 pip install --user sophos_central_api_connector
 ```
 ___
@@ -109,32 +109,32 @@ ___
 ### Help
 To get information on the CLI commands when using the `sophos_central_main.py` run:
 
-```python
+```commandline
 python sophos_central_main.py --help
 ```
 
 ### Tenants List
 To get a list of tenants:
 
-```python
+```commandline
 python sophos_central_main.py --auth <auth_option> --get tenants
 ```
 
 ### Inventory
 To get inventory data:
-```python
+```commandline
 python sophos_central_main.py --auth <auth_option> --get inventory --output <output_option>
 ```
 
 ### Alerts/Event Information
 To get alert data:
-```python
+```commandline
 python sophos_central_main.py --auth <auth_option> --get alerts --days <integer: 1-90> --output <output_option>
 ```
 
 ### Local Site
 To get a list of local site data:
-```python
+```commandline
 python sophos_central_main.py --auth <auth_option> --get local-sites --output <output_option>
 ```
    ___
@@ -180,9 +180,11 @@ sophos_central_api_connector
 |       misp_configuration.md
 |       sophos_configuration.md
 |       splunk_configuration.md
-|___xdr_queries
-|       |___live_discover
-|               ioc_hunter.sql
+|___queries
+|       |___live_discover_queries
+|               ld_ioc_hunter.sql
+|       |___xdr_queries
+|               xdr_ioc_hunter.sql
 |___sophos_central_api_connector
 |       ioc_hunter.py
 |       sophos_central_api_live_discover.py
@@ -225,9 +227,11 @@ sophos_central_api_connector
 |   |       misp_configuration.md
 |   |       sophos_configuration.md
 |   |       splunk_configuration.md
-|   |___xdr_queries
-|           |___live_discover
-|                  ioc_hunter.sql
+|___queries
+|       |___live_discover_queries
+|               ld_ioc_hunter.sql
+|       |___xdr_queries
+|               xdr_ioc_hunter.sql
 |       ioc_hunter.py
 |       sophos_central_api_live_discover.py
 |       sophos_central_api_auth.py
@@ -267,12 +271,13 @@ sophos_central_api_connector
 |       <date>_<time>_results_combined.json
 |       <tenant_id>_<date>_<time>_<risk_level>_dry_run_report.json
 |       ...
+|   |___query_results
+|       <xdr_datalake/live-discover>_query_list.json
+|       <xdr_datalake/live-discover>_search_data_<timestamp>.json
+|       <xdr_datalake/live-discover>_result_data_<timestamp>.json
+|       live-discover_endpoint_data_<timestamp>.json
 |___polling
 |       poll_config.json
 |       alert_ids.json
 |       temp_alert_ids.json
-|___tmp
-      endpoint_data.json
-      result_data.json
-      search_data.json
 ```

@@ -288,6 +288,8 @@ def gen_idalerts(event_data):
         with open(poll_alerts_path, 'r') as alerts_file:
             alert_ids = json.load(alerts_file)
 
+        alerts_file.close()
+
         # update the dictionary with the new event information that was successfully sent to
         alert_ids.update(event_data)
         with open(poll_alerts_path, 'w', encoding='utf-8') as id_file:

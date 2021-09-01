@@ -1,6 +1,7 @@
 import logging
 import requests
 import shutil
+import json
 from requests.utils import requote_uri
 from datetime import datetime, timedelta
 from time import sleep
@@ -12,6 +13,7 @@ endpoint_url = api_conf.endpoints_uri
 alerts_url = api_conf.alerts_uri
 settings_url = api_conf.settings_uri
 livediscover_url = api_conf.livediscover_uri
+xdr_url = api_conf.xdr_uri
 
 
 def gather_category_data(tenant_info):
@@ -68,48 +70,70 @@ def generate_tenant_urls(tenant_info, page_size, api, from_str, to_str):
     if api == "endpoint":
         # api for endpoint has been passed. For loop to generate the headers for each of the tenant ids
         for ten_id, ten_item in tenant_info.items():
-            tenant_url_data[ten_id] = {"filename": "{0}{1}{2}{3}".format(ten_item["name"], "_", ten_id, ".json"),
-                                       "orig_url": "{0}{1}".format(ten_item["page_url"], endpoint_url),
-                                       "pageurl": "{0}{1}?pageSize={2}".format(ten_item['page_url'], endpoint_url,
-                                                                               page_size),
-                                       "headers": ten_item["headers"]}
+            tenant_url_data[ten_id] = {
+                "filename": "{0}{1}{2}{3}".format(ten_item["name"], "_", ten_id, ".json"),
+                "orig_url": "{0}{1}".format(ten_item["page_url"], endpoint_url),
+                "pageurl": "{0}{1}?pageSize={2}".format(ten_item['page_url'], endpoint_url, page_size),
+                "headers": ten_item["headers"]
+            }
         return tenant_url_data
     elif api == "common":
         # api for common has been passed. For loop to generate the headers for each of the tenant ids
         for ten_id, ten_item in tenant_info.items():
+            # decoded orig_url
+            decoded_orig_url = str("{0}{1}?from={2}&to={3}".format(ten_item["page_url"], alerts_url, from_str, to_str))
             # a decoded url is constructed from the variables
             decoded_url = str("{0}{1}?from={2}&to={3}&pageSize={4}".format(ten_item["page_url"],
                                                                            alerts_url, from_str, to_str, page_size))
             # the decoded urls are encoded so they are valid urls to be passed
             pageurl = requote_uri(decoded_url)
-            tenant_url_data[ten_id] = {"filename": "{0}{1}{2}{3}".format(ten_item["name"], "_", ten_id, ".json"),
-                                       "url": "{0}".format(ten_item["page_url"]), "orig_url": pageurl, "pageurl": pageurl,
-                                       "headers": ten_item["headers"]}
+            orig_url = requote_uri(decoded_orig_url)
+            tenant_url_data[ten_id] = {
+                "filename": "{0}{1}{2}{3}".format(ten_item["name"], "_", ten_id, ".json"),
+                "url": "{0}".format(ten_item["page_url"]),
+                "orig_url": orig_url,
+                "pageurl": pageurl,
+                "headers": ten_item["headers"]
+            }
         return tenant_url_data
     elif api == "local-sites":
         # api for local sites has been passed. For loop to generate the headers for each of the tenant ids
         for ten_id, ten_item in tenant_info.items():
-            tenant_url_data[ten_id] = {"filename": "{0}{1}{2}{3}".format(ten_item["name"], "_", ten_id, ".json"),
-                                       "orig_url": "{0}{1}{2}".format(ten_item["page_url"], settings_url,
-                                                                      "/web-control/local-sites"),
-                                       "pageurl": "{0}{1}{2}?pageSize={3}".format(ten_item['page_url'], settings_url,
-                                                                                  "/web-control/local-sites",
-                                                                                  page_size),
-                                       "headers": ten_item["headers"]}
+            tenant_url_data[ten_id] = {
+                "filename": "{0}{1}{2}{3}".format(ten_item["name"], "_", ten_id, ".json"),
+                "orig_url": "{0}{1}{2}".format(ten_item["page_url"], settings_url, "/web-control/local-sites"),
+                "pageurl": "{0}{1}{2}?pageSize={3}".format(ten_item['page_url'], settings_url,
+                                                           "/web-control/local-sites", page_size),
+                "headers": ten_item["headers"]
+            }
         return tenant_url_data
     elif api == "live-discover":
         # api for live discover has been passed. For loop to generate the headers for each of the tenant ids
         for ten_id, ten_item in tenant_info.items():
-            tenant_url_data[ten_id] = {"filename": "{0}{1}{2}{3}".format(ten_item["name"], "_", ten_id, ".json"),
-                                       "url": "{0}".format(ten_item["page_url"]), "orig_url": "{0}{1}".format(ten_item["page_url"], livediscover_url),
-                                       "pageurl": "{0}{1}?pageSize={2}".format(ten_item['page_url'], livediscover_url,
-                                                                                  page_size), 
-                                       "name": "{0}".format(ten_item["name"]),
-                                       "headers": ten_item["headers"]}
+            tenant_url_data[ten_id] = {
+                "filename": "{0}{1}{2}{3}".format(ten_item["name"], "_", ten_id, ".json"),
+                "url": "{0}".format(ten_item["page_url"]),
+                "orig_url": "{0}{1}".format(ten_item["page_url"], livediscover_url),
+                "pageurl": "{0}{1}?pageSize={2}".format(ten_item['page_url'], livediscover_url, page_size),
+                "name": "{0}".format(ten_item["name"]),
+                "headers": ten_item["headers"]
+            }
+        return tenant_url_data
+    elif api == "xdr-datalake":
+        # api for xdr has been passed. For loop to generate the headers for each of the tenant ids
+        for ten_id, ten_item in tenant_info.items():
+            tenant_url_data[ten_id] = {
+                "filename": "{0}{1}{2}{3}".format(ten_item["name"], "_", ten_id, ".json"),
+                "url": "{0}".format(ten_item["page_url"]),
+                "orig_url": "{0}{1}".format(ten_item["page_url"], xdr_url),
+                "pageurl": "{0}{1}?pageSize={2}".format(ten_item['page_url'], xdr_url, page_size),
+                "name": "{0}".format(ten_item["name"]),
+                "headers": ten_item["headers"]
+            }
         return tenant_url_data
     else:
         # this is return if an invalid api variable is supplied
-        logging.error("The {0} API does not appear to exist.".format(api))
+        logging.critical("The {0} API does not appear to exist.".format(api))
         exit(1)
 
 
@@ -173,7 +197,7 @@ def validate_page_size(page_size, api):
         elif int(page_size) > api_conf.max_inv_page:
             # Returns an error if the size of the page passed is greater than the max
             logging.error("Inventory page size has a max of: {0}".format(api_conf.max_inv_page))
-            logging.error("Please ensure that the value in config.ini is less than or equal to this")
+            logging.critical("Please ensure that the value in config.ini is less than or equal to this")
             exit(1)
         elif int(page_size) <= api_conf.max_inv_page:
             # Continues if the page size set is less than or equal to the max
@@ -192,7 +216,7 @@ def validate_page_size(page_size, api):
         elif int(page_size) > api_conf.max_alerts_page:
             # Returns an error if the size of the page passed is greater than the max
             logging.error("Alerts page size has a max of: {0}".format(api_conf.max_alerts_page))
-            logging.error("Please ensure that the value in config.ini is less than or equal to this")
+            logging.critical("Please ensure that the value in config.ini is less than or equal to this")
             exit(1)
     elif api == "local-sites":
         # Verify the page sizes for the local sites api
@@ -207,7 +231,7 @@ def validate_page_size(page_size, api):
         elif int(page_size) > api_conf.max_localsite_page:
             # Returns an error if the size of the page passed is greater than the max
             logging.error("Local Sites page size has a max of: {0}".format(api_conf.max_localsite_page))
-            logging.error("Please ensure that the value in config.ini is less than or equal to this")
+            logging.critical("Please ensure that the value in config.ini is less than or equal to this")
             exit(1)
 
     return page_size
@@ -224,10 +248,10 @@ def open_tmp_json(file):
     try:
         tmp_path = api_conf.temp_path
         final_tmp_path = get_file_location(tmp_path)
-        with open(os.path.join(final_tmp_path, file), "r", encoding='utf-8') as tmp_file:
+        with open(path.join(final_tmp_path, file), "r", encoding='utf-8') as tmp_file:
             file = tmp_file.read()
 
-        file_data = json.loads(q_data)
+        file_data = json.loads(file)
     except IOError:
         logging.error("Unable to open file: {0}".format(final_tmp_path))
 
@@ -236,8 +260,8 @@ def open_tmp_json(file):
 
 def clean_up():
     tmp_path = api_conf.temp_path
-    final_tmp_path = api_utils.get_file_location(tmp_path)
-    if not os.path.exists(final_tmp_path):
+    final_tmp_path = get_file_location(tmp_path)
+    if not path.exists(final_tmp_path):
         logging.info("Nothing to clean up")
     else:
         logging.info("Deleting: {0}".format(final_tmp_path))
@@ -246,4 +270,4 @@ def clean_up():
         except OSError as err:
             logging.error("Error: {0} - {1}".format(err.filename, err.strerror))
         else:
-            logging.info("{0} dir an contents successfully deleted".format(final_tmp_path))
+            logging.info("{0} dir and contents successfully deleted".format(final_tmp_path))

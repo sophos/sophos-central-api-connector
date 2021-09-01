@@ -1,6 +1,7 @@
 import intelix
 import logging
 import configparser as cp
+from urllib.parse import quote_plus
 from datetime import datetime
 from ipaddress import ip_address
 from sophos_central_api_connector import sophos_central_api_output as api_output, sophos_central_api_connector_utils \
@@ -39,8 +40,10 @@ def local_site_check(intelix_client_id, intelix_client_secret, request_data, ten
                 maxRisk}
             intelix_dict[url_value] = intx_data
         elif not ip_val:
+            # urlencode the url to lookup
+            encoded_url_value = quote_plus(url_value)
             # send_url_lookup
-            intx.url_lookup(url_value)
+            intx.url_lookup(encoded_url_value)
             intx_data = {"lookup_type": "url", "requestId": intx.requestId,
                          "productivityCategory": intx.productivityCategory,
                          "securityCategory": intx.securityCategory, "riskLevel": intx.riskLevel,
