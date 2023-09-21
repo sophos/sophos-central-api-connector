@@ -14,6 +14,10 @@ alerts_url = api_conf.alerts_uri
 settings_url = api_conf.settings_uri
 livediscover_url = api_conf.livediscover_uri
 xdr_url = api_conf.xdr_uri
+firewall_url = api_conf.firewall_uri
+firewall_grp_url = api_conf.fw_grps_uri
+admins_url = api_conf.admins_uri
+roles_url = api_conf.roles_uri
 
 
 def gather_category_data(tenant_info):
@@ -131,6 +135,46 @@ def generate_tenant_urls(tenant_info, page_size, api, from_str, to_str):
                 "headers": ten_item["headers"]
             }
         return tenant_url_data
+    elif api == "firewall":
+        # api for firewalls has been passed. For loop to generate the headers for each of the tenant ids
+        for ten_id, ten_item in tenant_info.items():
+            tenant_url_data[ten_id] = {
+            "filename": "{0}{1}{2}{3}".format(ten_item["name"], "_", ten_id, ".json"),
+            "orig_url": "{0}{1}".format(ten_item["page_url"], firewall_url),
+            "pageurl": "{0}{1}?pageSize={2}".format(ten_item['page_url'], firewall_url, page_size),
+            "headers": ten_item["headers"]
+            }
+        return tenant_url_data
+    elif api == "firewall_groups":
+        # api for firewall groups has been passed. For loop to generate the headers for each of the tenant ids
+        for ten_id, ten_item in tenant_info.items():
+            tenant_url_data[ten_id] = {
+            "filename": "{0}{1}{2}{3}".format(ten_item["name"], "_", ten_id, ".json"),
+            "orig_url": "{0}{1}".format(ten_item["page_url"], firewall_grp_url),
+            "pageurl": "{0}{1}?pageSize={2}".format(ten_item['page_url'], firewall_grp_url, page_size),
+            "headers": ten_item["headers"]
+            }
+        return tenant_url_data
+    elif api == "admins":
+        # api for admins has been passed. For loop to generate the headers for each of the tenant ids
+        for ten_id, ten_item in tenant_info.items():
+            tenant_url_data[ten_id] = {
+            "filename": "{0}{1}{2}{3}".format(ten_item["name"], "_", ten_id, ".json"),
+            "orig_url": "{0}{1}".format(ten_item["page_url"], admins_url),
+            "pageurl": "{0}{1}?pageSize={2}".format(ten_item['page_url'], admins_url, page_size),
+            "headers": ten_item["headers"]
+            }
+        return tenant_url_data
+    elif api == "roles":
+        # api for roles has been passed. For loop to generate the headers for each of the tenant ids
+        for ten_id, ten_item in tenant_info.items():
+            tenant_url_data[ten_id] = {
+            "filename": "{0}{1}{2}{3}".format(ten_item["name"], "_", ten_id, ".json"),
+            "orig_url": "{0}{1}".format(ten_item["page_url"], roles_url),
+            "pageurl": "{0}{1}?pageSize={2}".format(ten_item['page_url'], roles_url, page_size),
+            "headers": ten_item["headers"]
+            }
+        return tenant_url_data
     else:
         # this is return if an invalid api variable is supplied
         logging.critical("The {0} API does not appear to exist.".format(api))
@@ -233,6 +277,54 @@ def validate_page_size(page_size, api):
             logging.error("Local Sites page size has a max of: {0}".format(api_conf.max_localsite_page))
             logging.critical("Please ensure that the value in config.ini is less than or equal to this")
             exit(1)
+    elif api == "firewall":
+            # Verify the page sizes for the firewall api
+            logging.info("Verifying page size requested")
+            if page_size == "":
+                # if no value is set then a default value is passed for this variable
+                logging.info("No value set in the config. Apply default.")
+                page_size = 100
+            elif int(page_size) > api_conf.max_fw_page:
+                # Returns an error if the size of the page passed is greater than the max
+                logging.error("Inventory page size has a max of: {0}".format(api_conf.max_fw_page))
+                logging.critical("Please ensure that the value in config.ini is less than or equal to this")
+                exit(1)
+            elif int(page_size) <= api_conf.max_fw_page:
+                # Continues if the page size set is less than or equal to the max
+                logging.info("Applying setting from config. Setting is less than or equal to the maximum allowed")
+                pass
+    elif api == "firewall_groups":
+            # Verify the page sizes for the firewall groups api
+            logging.info("Verifying page size requested")
+            if page_size == "":
+                # if no value is set then a default value is passed for this variable
+                logging.info("No value set in the config. Apply default.")
+                page_size = 100
+            elif int(page_size) > api_conf.max_fw_grps_page:
+                # Returns an error if the size of the page passed is greater than the max
+                logging.error("Inventory page size has a max of: {0}".format(api_conf.max_fw_grps_page))
+                logging.critical("Please ensure that the value in config.ini is less than or equal to this")
+                exit(1)
+            elif int(page_size) <= api_conf.max_fw_grps_page:
+                # Continues if the page size set is less than or equal to the max
+                logging.info("Applying setting from config. Setting is less than or equal to the maximum allowed")
+                pass
+    elif api == "admins":
+            # Verify the page sizes for the admin api
+            logging.info("Verifying page size requested")
+            if page_size == "":
+                # if no value is set then a default value is passed for this variable
+                logging.info("No value set in the config. Apply default.")
+                page_size = 100
+            elif int(page_size) > api_conf.max_admins_page:
+                # Returns an error if the size of the page passed is greater than the max
+                logging.error("Inventory page size has a max of: {0}".format(api_conf.max_admins_page))
+                logging.critical("Please ensure that the value in config.ini is less than or equal to this")
+                exit(1)
+            elif int(page_size) <= api_conf.max_admins_page:
+                # Continues if the page size set is less than or equal to the max
+                logging.info("Applying setting from config. Setting is less than or equal to the maximum allowed")
+                pass
 
     return page_size
 
