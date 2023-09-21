@@ -17,27 +17,31 @@ def get_data(tenant_url_data, page_size, tenant_id, api):
     json_items = dict()
 
     # gather page total information
-    if api != "common":
-        logging.debug("Getting page totals for api: {0}".format(api))
-        pagetotal_url = "{0}?pageSize={1}&pageTotal=true".format(orig_url, page_size)
-        logging.debug("page total url: {0}".format(pagetotal_url))
-        pg_total = get_page_totals(pagetotal_url, headers)
-    else:
-        logging.debug("No page totals available for this api: {0}".format(api))
+    if api == "common":
+        logging.info("No page totals available for this api: {0}".format(api))
         pg_total = None
+    else:
+        logging.info("Getting page totals for api: {0}".format(api))
+        pagetotal_url = "{0}?pageTotal=true&pageSize={1}".format(orig_url, page_size)
+        logging.info("page total url: {0}".format(pagetotal_url))
+        pg_total = get_page_totals(pagetotal_url, headers)
 
     # get the first page of data from central api
-    ep_data = get_page(pageurl, headers)
+    if api == "roles":
+        ep_data = get_page(orig_url, headers)
+    else:
+        ep_data = get_page(pageurl, headers)
 
     # attribute the retrieved data from the json to item and page data variables
     if not ep_data or ep_data.get('error'):
         ep_item_data = None
     else:
         ep_item_data = ep_data['items']
+        logging.debug(ep_item_data)
         ep_page_data = ep_data.get('pages')
         logging.debug("ep_page_data: {0}".format(ep_page_data))
 
-        if ep_page_data.get('current'):
+        if isinstance(ep_page_data, dict):
             page_no = ep_page_data['current']
         else:
             page_no = None
@@ -59,21 +63,26 @@ def get_data(tenant_url_data, page_size, tenant_id, api):
         logging.debug(next_key)
     else:
         # Does further checks if there is data. to verify whether we need to send for the next page of events
-        if 'nextKey' in ep_page_data.keys():
-            # Only if the nextkey is present will we send further requests for data
-            logging.debug("Another page to process")
-            next_key = True
-            logging.debug(next_key)
-        elif page_no is not None and page_no < pg_total:
-            # If the api does not contain a nextkey check whether it has more pages to process
-            logging.debug("Current page is lower than the total number of pages. Continue processing")
-            next_key = True
-            logging.debug(next_key)
+        if isinstance(ep_page_data, dict):
+            findkey = 'nextKey'
+            if findkey in ep_page_data:
+                # Only if the nextkey is present will we send further requests for data
+                logging.debug("Another page to process")
+                next_key = True
+                logging.debug(next_key)
+            elif page_no is not None and page_no < pg_total:
+                # If the api does not contain a nextkey check whether it has more pages to process
+                logging.debug("Current page is lower than the total number of pages. Continue processing")
+                next_key = True
+                logging.debug(next_key)
+            else:
+                # No nextkey is present we set next_key to false
+                logging.debug("There is no 'next' key present")
+                next_key = False
+                logging.debug(next_key)
         else:
-            # No nextkey is present we set next_key to false
-            logging.debug("There is no 'next' key present")
+            logging.info("There is no 'next' key present")
             next_key = False
-            logging.debug(next_key)
 
     # set the event count to 0
     event_count = 0
@@ -116,14 +125,16 @@ def get_page(pageurl, headers):
     logging.debug("get_page url passed: {0}".format(pageurl))
     res_sess = requests.session()
     retries = Retry(total=10, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504, 429])
+    #retries = Retry(total=10, backoff_factor=0.1, status_forcelist=[502, 503, 504, 429])
     res_sess.mount('https://', HTTPAdapter(max_retries=retries))
     try:
         logging.debug("Attempting to get page: {0}".format(pageurl))
         ep_res = res_sess.get(pageurl, headers=headers)
         ep_res.raise_for_status()
+        logging.info(ep_res.headers)
     except requests.exceptions.HTTPError as err_http:
         if ep_res.status_code == 403:
-            logging.error("403 permission error")
+            logging.error(ep_res.json)
             resp_json = ep_res.json()
             resp_msg = resp_json.get('message')
             logging.error(resp_msg)
@@ -177,11 +188,18 @@ def process_next_page(ep_page_data, page_size, orig_url, page_no, pg_total, api)
 
 
 def get_page_totals(url, headers):
+    logging.info("start gathering page totals")
     try:
         pagetotal_res = requests.get(url, headers=headers)
         pagetotal_res.raise_for_status()
     except requests.exceptions.HTTPError as http_err:
         if pagetotal_res.status_code == 403:
+            logging.error(http_err)
+            logging.error(pagetotal_res.json())
+            pass
+        elif pagetotal_res.status_code == 500:
+            logging.error(http_err)
+            logging.error(pagetotal_res.json())
             pass
         else:
             logging.error(http_err)

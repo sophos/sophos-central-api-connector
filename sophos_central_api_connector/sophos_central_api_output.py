@@ -84,6 +84,44 @@ def process_output_json(json_items, filename, api):
             os.makedirs(final_q_path)
         with open(os.path.join(final_q_path, filename), "w", encoding='utf-8') as q_res_file:
             json.dump(json_items, q_res_file, ensure_ascii=False, indent=2)
+    elif api == "firewall":
+        logging.debug("JSON file output, appending firewall inventory data")
+        # a new folder is created to store the files
+        fw_path = api_conf.output_fw_path
+        final_fw_path = api_utils.get_file_location(fw_path)
+        if not os.path.exists(final_fw_path):
+            os.makedirs(final_fw_path)
+        with open(os.path.join(final_fw_path, filename), "w", encoding='utf-8') as fw_file:
+            json.dump(json_items, fw_file, ensure_ascii=False, indent=2)
+    elif api == "firewall_groups":
+        logging.debug("JSON file output, appending firewall group data")
+        # a new folder is created to store the files
+        fw_grp_path = api_conf.output_fw_grps_path
+        final_fw_grps_path = api_utils.get_file_location(fw_grp_path)
+        if not os.path.exists(final_fw_grps_path):
+            os.makedirs(final_fw_grps_path)
+        with open(os.path.join(final_fw_grps_path, filename), "w", encoding='utf-8') as fw_grps_file:
+            json.dump(json_items, fw_grps_file, ensure_ascii=False, indent=2)
+    elif api == "admins":
+        logging.debug("JSON file output, appending admin data")
+        # a new folder is created to store the files
+        admins_path = api_conf.output_admins_path
+        final_admins_path = api_utils.get_file_location(admins_path)
+        if not os.path.exists(final_admins_path):
+            os.makedirs(final_admins_path)
+        with open(os.path.join(final_admins_path, filename), "w", encoding='utf-8') as admins_file:
+            json.dump(json_items, admins_file, ensure_ascii=False, indent=2)
+    elif api == "roles":
+        logging.debug("JSON file output, appending role data")
+        # a new folder is created to store the files
+        role_path = api_conf.output_roles_path
+        final_role_path = api_utils.get_file_location(role_path)
+        if not os.path.exists(final_role_path):
+            os.makedirs(final_role_path)
+        with open(os.path.join(final_role_path, filename), "w", encoding='utf-8') as roles_file:
+            json.dump(json_items, roles_file, ensure_ascii=False, indent=2)
+    else:
+        logging.error("API Output Data Not Found")
 
 
 def process_output_stdout(json_items):

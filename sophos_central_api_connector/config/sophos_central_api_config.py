@@ -11,12 +11,19 @@ directory_uri = '/common/v1/directory'
 settings_uri = '/endpoint/v1/settings'
 livediscover_uri = '/live-discover/v1/queries'
 xdr_uri = '/xdr-query/v1/queries'
+firewall_uri = '/firewall/v1/firewalls'
+fw_grps_uri = '/firewall/v1/firewall-groups'
+admins_uri = '/common/v1/admins'
+roles_uri = '/common/v1/roles'
 
 
 # Default Value
 max_alerts_page = 100
 max_inv_page = 500
 max_localsite_page = 100
+max_fw_page = 1000
+max_fw_grps_page = 100
+max_admins_page = 100
 
 # Regex Variables
 uuid_regex = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}'
@@ -32,6 +39,10 @@ output_ls_path = PurePath("/output/get_local_sites")
 output_intx_path = PurePath("/output/intelix")
 output_intx_del_path = PurePath("/output/intelix/delete_local_sites")
 output_queries_path = PurePath("/output/query_results")
+output_fw_path = PurePath("/output/firewall_inventory")
+output_fw_grps_path = PurePath("/output/firewall_groups")
+output_admins_path = PurePath("/output/admin_data")
+output_roles_path = PurePath("/output/roles_data")
 poll_conf_path = PurePath("/polling/poll_config.json")
 poll_alerts_path = PurePath("/polling/alert_ids.json")
 poll_temp_path = PurePath("/polling/temp_alert_ids.json")
