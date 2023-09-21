@@ -199,6 +199,10 @@ sophos_central_api_connector
 |       sophos_central_api_tenants.py
 |       sophos_central_api_hec_splunk.py
 |       sophos_central_main.py
+|       get_admins.py
+|       get_roles.py
+|       get_firewall_groups.py
+|       get_firewalls.py
 |___config
 |       intelix_config.ini
 |       misp_config.ini
@@ -245,6 +249,10 @@ sophos_central_api_connector
 |       sophos_central_api_tenants.py
 |       sophos_central_api_hec_splunk.py
 |       sophos_central_main.py
+|       get_admins.py
+|       get_roles.py
+|       get_firewall_groups.py
+|       get_firewalls.py
 |___config
 |       intelix_config.ini
 |       misp_config.ini
@@ -258,10 +266,23 @@ sophos_central_api_connector
 |   |       <tenant_name>_<tenant_id>.json
 |   |       ...
 |   |___get_inventory
-|           <tenant_name>_<tenant_id>.json
+|   |       <tenant_name>_<tenant_id>.json
+|   |       ...
 |   |___get_local_sites
-|           <tenant_name>_<tenant_id>.json
-|           ...
+|   |       <tenant_name>_<tenant_id>.json
+|   |       ...
+|   |___admin_data
+|   |       <tenant_name>_<tenant_id>.json
+|   |       ...	
+|   |___roles_data
+|   |       <tenant_name>_<tenant_id>.json
+|   |       ...
+|   |_firewall_groups
+|   |       <tenant_name>_<tenant_id>.json
+|   |       ...
+|   |_firewall_inventory
+|   |       <tenant_name>_<tenant_id>.json
+|   |       ...
 |   |___intelix
 |       |___delete_local_sites
 |           <date>_<time>_deletion_details.json
