@@ -42,7 +42,10 @@ def get_data(tenant_url_data, page_size, tenant_id, api):
         logging.debug("ep_page_data: {0}".format(ep_page_data))
 
         if isinstance(ep_page_data, dict):
-            page_no = ep_page_data['current']
+            if "current" in ep_page_data:
+                page_no = ep_page_data['current']
+            else:
+                page_no = None
         else:
             page_no = None
 
