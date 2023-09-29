@@ -23,6 +23,9 @@ def get_roles(tenant_url_data, output, page_size, tenant):
         # get data information for the tenant in the loop
         json_data = get_api.get_data(tenant_url_data, page_size, tenant_id, api)
         # process data by the output parameter
+        logging.info("Adding Tenant Information")
+        for json_id, json_item in json_data.items():
+            json_item['tenant_id'] = tenant_id
         events = api_output.process_output(output, json_data, tenant_url_data, tenant_id, api, sourcetype_value)
     else:
         # Completed gathering data for this tenant
