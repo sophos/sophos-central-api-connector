@@ -67,14 +67,15 @@ def get_next_page(tenant_url, headers, tenant_page_total, sophos_access_token, t
                 "Authorization": "Bearer {0}".format(sophos_access_token),
                 "Accept": "application/json"
             }
-            tenant_item = {
-                item['id']: {
-                    "name": item['name'],
-                    "headers": tenant_headers,
-                    "page_url": item['apiHost']
+            if item['billingType'] != 'trial':
+                tenant_item = {
+                    item['id']: {
+                        "name": item['name'],
+                        "headers": tenant_headers,
+                        "page_url": item['apiHost']
+                    }
                 }
-            }
-            tenant_info.update(tenant_item)
+                tenant_info.update(tenant_item)
 
         next_page += 1
         # checks if the next_page value is less than or equal to total pages. If so create next url for pass
